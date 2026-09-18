@@ -1,0 +1,103 @@
+"""
+datos.py — Generación de datos y normalización
+================================================
+Contiene:
+  - generar_datos()   : genera dataset sintético (REEMPLAZAR con modelo del paper)
+  - preparar_dataset(): normaliza y divide en train/val
+  - normalizar_X()    : normaliza inputs para inferencia
+  - desnormalizar_y() : convierte outputs normalizados a unidades reales
+"""
+
+import numpy as np
+import torch
+from config import (DATASET_PATH, FRACCION_VAL)
+
+
+# ─────────────────────────────────────────────────────────────
+# CARGAR DATOS DEL PAPER
+# ─────────────────────────────────────────────────────────────
+
+def cargar_datos(ruta=DATASET_PATH):
+    import pandas as pd
+    
+    df = pd.read_csv(ruta)
+    
+    X = df[['kappa_1_mm', 'epsilon_MPa']].values    # 2 inputs
+    y = df[['F_roca_N']].values                      # 1 output
+    
+    print(f"Dataset cargado: {ruta}")
+    print(f"  Puntos totales: {len(X)}")
+    print(f"  kappa rango:    [{X[:,0].min():.6f}, {X[:,0].max():.6f}] 1/mm")
+    print(f"  F_roca rango:  [{y[:,0].min():.2f}, {y[:,0].max():.2f}] N")
+    
+    return X, y
+
+
+# ─────────────────────────────────────────────────────────────
+# NORMALIZACIÓN Y PREPARACIÓN DEL DATASET
+# ─────────────────────────────────────────────────────────────
+
+def preparar_dataset(X, y, fraccion_val=FRACCION_VAL):
+    """
+    Normaliza inputs y outputs a [0,1] y divide en train/validación.
+    El conjunto de validación sirve para detectar overfitting: si la loss
+    de train baja pero la de validación sube, la red está memorizando
+    los datos de entrenamiento en vez de aprender la relación general.
+
+    Args:
+        X : array (N, 5) — inputs sin normalizar
+        y : array (N, 2) — outputs sin normalizar
+        fraccion_val : fracción del dataset para validación
+
+    Returns:
+        X_train, y_train : tensores de entrenamiento normalizados
+        X_val, y_val     : tensores de validación normalizados
+        stats            : diccionario con min/max para desnormalizar
+    """
+    # Guardar estadísticas para desnormalizar después
+    X_min = X.min(axis=0)
+    X_max = X.max(axis=0)
+    y_min = y.min(axis=0)
+    y_max = y.max(axis=0)
+
+    stats = {
+        'X_min': X_min, 'X_max': X_max,
+        'y_min': y_min, 'y_max': y_max
+    }
+
+    # Normalización min-max a [0, 1]
+    X_norm = (X - X_min) / (X_max - X_min + 1e-8)
+    y_norm = (y - y_min) / (y_max - y_min + 1e-8)
+
+    # División train/validación con mezcla aleatoria
+    N       = len(X_norm)
+    N_val   = int(N * fraccion_val)
+    N_train = N - N_val
+
+    idx       = np.random.permutation(N)
+    idx_train = idx[:N_train]
+    idx_val   = idx[N_train:]
+
+    X_train = torch.tensor(X_norm[idx_train], dtype=torch.float32)
+    y_train = torch.tensor(y_norm[idx_train], dtype=torch.float32)
+    X_val   = torch.tensor(X_norm[idx_val],   dtype=torch.float32)
+    y_val   = torch.tensor(y_norm[idx_val],   dtype=torch.float32)
+
+    print(f"\nDataset:")
+    print(f"  Train: {N_train} puntos")
+    print(f"  Val:   {N_val} puntos")
+
+    return X_train, y_train, X_val, y_val, stats
+
+
+def desnormalizar_y(y_norm, stats):
+    """Convierte outputs normalizados [0,1] de vuelta a °/mm."""
+    y_min = torch.tensor(stats['y_min'], dtype=torch.float32)
+    y_max = torch.tensor(stats['y_max'], dtype=torch.float32)
+    return y_norm * (y_max - y_min) + y_min
+
+
+def normalizar_X(X_np, stats):
+    """Normaliza un array de inputs para usar con el modelo entrenado."""
+    X_norm = (X_np - stats['X_min']) / (stats['X_max'] - stats['X_min'] + 1e-8)
+    return torch.tensor(X_norm, dtype=torch.float32)

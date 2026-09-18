@@ -1,0 +1,94 @@
+================================================================================
+  GUÍA DE USO — Sistema de Control Direccional basado en Red Neuronal
+================================================================================
+
+REQUISITOS
+----------
+- Python 3.11 o superior
+- Librerías: torch, numpy, matplotlib, pandas, scipy
+  Instalar con: pip install torch numpy matplotlib pandas scipy
+
+
+ESTRUCTURA DE ARCHIVOS
+----------------------
+  main.py            Script principal de entrenamiento. Carga el dataset,
+                     entrena la red, evalúa resultados y guarda el modelo
+                     entrenado en modelo_bha.pth.
+
+  control.py         Simulación de perforación completa. Carga el modelo
+                     entrenado y ejecuta el lazo de control sobre una
+                     trayectoria con waypoints definidos, generando
+                     gráficos de seguimiento y fuerzas.
+
+  config.py          Constantes del sistema (geometría del BHA, curvatura
+                     máxima, propiedades de la sarta, hiperparámetros de
+                     la red). Parámetros físicos o de entrenamiento.
+
+  datos.py           Carga el dataset desde el archivo CSV y lo prepara
+                     para el entrenamiento (normalización y división en
+                     conjuntos de entrenamiento y validación).
+
+  modelo.py          Define la arquitectura de la red neuronal (MLP con
+                     activación tanh). La configuración se lee de config.py.
+
+  entrenamiento.py   Funciones de entrenamiento (Adam + L-BFGS con best
+                     checkpoint) y evaluación (métricas y gráficos).
+
+  optimizador.py     Contiene la descomposición de fuerzas en pads
+                     (ecuaciones 38-46 del informe) y la función
+                     control_completo() que encadena red neuronal +
+                     fuerza de sarta + distribución en pads.
+
+  trayectoria.py     Genera la trayectoria ideal mediante spline cúbico
+                     sujeto con condición de arranque vertical. Los
+                     waypoints se definen al crear la instancia.
+
+  navegacion.py      Lógica de navegación: dead reckoning, método de
+                     guiado Lookahead Point, y ciclo de control completo.
+
+  probar_red.py      Script interactivo para probar la red manualmente.
+                     Se ingresa un valor de curvatura y devuelve la
+                     fuerza predicha.
+
+  dataset_nn.csv     Dataset de entrenamiento generado por MATLAB con el
+                     modelo de Perneder. Columnas: F_roca_N, kappa_1_mm,
+                     WOB_N, RPM, R_mm, Z_mm.
+
+
+CÓMO CORRER
+-----------
+
+1. ENTRENAR LA RED
+   Ubicarse en la carpeta del proyecto y ejecutar:
+
+       python main.py
+
+   Esto carga dataset_nn.csv, entrena la red, muestra gráficos de
+   evaluación y guarda el modelo entrenado en modelo_bha.pth.
+   Tiempo estimado: 3-8 minutos.
+
+2. SIMULAR UNA PERFORACIÓN
+   Con el modelo ya entrenado (modelo_bha.pth existente):
+
+       python control.py
+
+   Esto carga el modelo, simula una perforación de ~550mm con
+   correcciones cada 5mm, y genera gráficos de trayectoria,
+   error lateral y fuerzas en los pads.
+
+
+NOTAS
+-----
+- El orden de ejecución es siempre: primero main.py, después control.py
+  o probar_red.py. Sin modelo_bha.pth los otros scripts no funcionan.
+
+- Para cambiar los waypoints de la simulación, modificar el array
+  'waypoints' dentro de simular_perforacion() en control.py.
+
+- Para regenerar el dataset con distintas trayectorias, correr
+  generar_dataset.m en MATLAB y copiar el CSV resultante a la carpeta
+  del proyecto.
+
+- El parámetro de lookahead (DS_AHEAD) se ajusta en navegacion.py.
+  Valor por defecto: 20 mm.
+================================================================================

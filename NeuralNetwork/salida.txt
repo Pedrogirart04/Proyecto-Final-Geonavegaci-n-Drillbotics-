@@ -1,0 +1,196 @@
+PS D:\totig(Usuario)\OneDrive\Documentos\ITBA\Proyecto Final\NN_1> python -u "d:\totig(Usuario)\OneDrive\Documentos\ITBA\Proyecto Final\NN_1\main.py"
+=================================================================
+GENERANDO DATOS SINTÉTICOS
+=================================================================
+Puntos generados:   15000
+Puntos válidos:     8979 (59.9%)
+Puntos descartados: 6021 (superan κ_max)
+Tiempo generación datos: 0.01s
+
+Dataset:
+  Train: 7184 puntos
+  Val:   1795 puntos
+Tiempo preparación dataset: 0.03s
+
+=================================================================
+ENTRENAMIENTO
+=================================================================
+
+─────────────────────────────────────────────────────────────────
+FASE 1 — Adam
+─────────────────────────────────────────────────────────────────
+Epoch     0 | Loss train: 9.7673e-02 | Loss val: 3.7923e-02
+Epoch   100 | Loss train: 1.1411e-04 | Loss val: 1.1643e-04
+Epoch   200 | Loss train: 9.7713e-05 | Loss val: 9.4563e-05
+Epoch   300 | Loss train: 9.7475e-05 | Loss val: 1.4786e-04
+Epoch   400 | Loss train: 8.9594e-05 | Loss val: 1.0795e-04
+Epoch   499 | Loss train: 1.0043e-04 | Loss val: 8.0249e-05
+
+Best checkpoint restaurado — mejor val loss: 7.3487e-05
+Tiempo Adam: 113.61s
+
+─────────────────────────────────────────────────────────────────
+FASE 2 — L-BFGS
+─────────────────────────────────────────────────────────────────
+LBFGS     0 | Loss val: 7.2130e-05
+LBFGS    20 | Loss val: 7.0347e-05
+LBFGS    40 | Loss val: 7.0347e-05
+LBFGS    60 | Loss val: 7.0347e-05
+LBFGS    80 | Loss val: 7.0347e-05
+LBFGS    99 | Loss val: 7.0347e-05
+
+Best checkpoint restaurado — mejor val loss L-BFGS: 7.0347e-05
+Tiempo entrenamiento: 123.96s
+
+=================================================================
+EJEMPLO OPTIMIZADOR INVERSO
+=================================================================
+Curvatura deseada: dI/ds = 0.1 °/mm, dA/ds = 0.05 °/mm
+Condiciones: WOB = 25.0 N, RPM = 80.0 rpm
+Corriendo Optimizador Inverso
+Tiempo optimizador inverso: 0.55s
+
+Fuerzas óptimas encontradas:
+  F1 (  0°): 80.37 N
+  F2 (120°): 58.61 N
+  F3 (240°): 40.71 N
+
+Curvatura predicha con esas fuerzas:
+  dI/ds = 0.1001 °/mm  (objetivo: 0.1)
+  dA/ds = 0.0489 °/mm  (objetivo: 0.05)
+  Error: 1.0851e-03 °/mm
+
+=================================================================
+EVALUACIÓN
+=================================================================
+
+─────────────────────────────────────────────────────────────────
+EVALUACIÓN EN VALIDACIÓN
+─────────────────────────────────────────────────────────────────
+dI/ds — Error medio: 4.0806e-03 °/mm | Error max: 1.7944e-02 °/mm
+dA/ds — Error medio: 4.0159e-03 °/mm | Error max: 1.7050e-02 °/mm
+dI/ds — Error relativo máximo: 5.93%
+dA/ds — Error relativo máximo: 5.57%
+Tiempo evaluación: 34.03s
+
+Modelo guardado en: modelo_bha.pth
+
+
+
+__________________________________________________
+__________________________________________________
+__________________________________________________
+
+
+
+═════════════════════════════════════════════════════════════════
+SIMULACIÓN DE PERFORACIÓN
+═════════════════════════════════════════════════════════════════
+  s [mm] | Error [mm] |   I [°] |   A [°] |  F1 [N] |  F2 [N] |  F3 [N]
+───────────────────────────────────────────────────────────────────────────
+    50.0 |      0.000 |    0.00 |    0.00 |     0.0 |     0.0 |     0.0
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   100.0 |     12.532 |    1.76 |    5.26 |   120.0 |   137.5 |    41.8
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   150.0 |     17.935 |    6.65 |   18.16 |   125.5 |   135.8 |    42.5
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   200.0 |     19.615 |   11.59 |   28.81 |    53.0 |   135.8 |    41.7
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   250.0 |     19.489 |   13.35 |   28.14 |   123.8 |   127.0 |    45.2
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   300.0 |     19.178 |   14.43 |   26.28 |   134.9 |    54.8 |    41.4
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   350.0 |     18.942 |   14.27 |   24.19 |   137.4 |    36.7 |    71.4
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   400.0 |     18.785 |   14.08 |   21.10 |   141.3 |    33.8 |   100.6
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   450.0 |     18.636 |   13.04 |   16.54 |   141.9 |    33.5 |   129.9
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   500.0 |     18.514 |   11.59 |    8.91 |   130.9 |    29.5 |   152.2
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+Corriendo Optimizador Inverso
+   550.0 |     18.355 |    9.52 |   -3.41 |    77.8 |    17.7 |   158.0
+PS D:\totig(Usuario)\OneDrive\Documentos\ITBA\Proyecto Final\NN_1> 
