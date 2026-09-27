@@ -1,9 +1,0 @@
-Definición de Mantenimiento
-Objetivos generales y particulares; evolución del mantenimiento
-Políticas de Mantenimiento
-Tipos de Mantenimiento:
-Organización del Mantenimiento / Ciclo de vida de un activo
-MANTENIMIENTO PREVENTIVO
-MANTENIMIENTO PREDICTIVO
-MANTENIMIENTO PRODUCTIVO TOTAL (TPM)
-FILOSOFÍA Y MÉTODOS UTILIZADOS EN MANTENIMIENTO Y PRODUCCIÓN (5S)
