@@ -1,0 +1,141 @@
+%% GENERADOR DE TRAYECTORIA DIRECCIONAL - PROYECTO DRILLBOTICS
+clear; clc; close all;
+
+%% 1. PARÁMETROS FÍSICOS Y WAYPOINTS
+L_bit = 100;     % Largo de la sección rígida inicial (entrada a la piedra) [mm]
+R_min = 50;      % Radio de curvatura mínimo admisible por el equipo [mm]
+K_max = 1/R_min; % Curvatura máxima permitida [1/mm]
+
+% Coordenadas de los Waypoints [X, Y, Z] en mm.
+% Z=0 es la superficie, Z aumenta hacia abajo (profundidad).
+P0 = [0, 0, 0];          % Superficie
+P1 = [0, 0, L_bit];      % Fin del tramo rígidamente vertical
+P2 = [0, 0, 200];        % Continuación de la verticalidad (Waypoint 1)
+P3 = [40, 5, 400];       % Comienza el desvío direccional (Waypoint 2)
+P4 = [50, 10, 600];      % Salida en la base de la piedra (Waypoint 3)
+
+% Agrupamos todos los puntos para el ploteo final
+P_global = [P0; P1; P2; P3; P4]'; 
+
+%% 2. CONSTRUCCIÓN TRAMO 1: ENTRADA ESTRICTAMENTE RECTA
+N_recto = 200; 
+Z_recto = linspace(0, L_bit, N_recto);
+X_recto = zeros(1, N_recto);
+Y_recto = zeros(1, N_recto);
+
+%% 3. CONSTRUCCIÓN TRAMO 2: CURVA DIRECCIONAL (SPLINE)
+% Aislamos los puntos que corresponden a la curva
+P_curva = [P1; P2; P3; P4]'; 
+n_curva = size(P_curva, 2);
+t_curva = linspace(0, 1, n_curva);
+
+% --- CONDICIONES DE BORDE (EMPALME SUAVE C1) ---
+% Le damos al vector tangente una magnitud igual a la distancia del próximo
+% punto para mantener la inercia direccional y evitar quiebres bruscos.
+dist_P1_P2 = norm(P_curva(:,2) - P_curva(:,1)); 
+V_empalme = [0; 0; 1] * dist_P1_P2; % Tangente 100% vertical hacia abajo
+
+dist_P3_P4 = norm(P_curva(:,end) - P_curva(:,end-1));
+V_salida = P_curva(:, end) - P_curva(:, end-1);
+V_salida = (V_salida / norm(V_salida)) * dist_P3_P4;
+
+% Generamos los coeficientes del spline cúbico
+cs = spline(t_curva, [V_empalme, P_curva, V_salida]);
+
+% Evaluamos la curva en una grilla de alta resolución
+N_curva_fino = 1000;
+t_fino_curva = linspace(0, 1, N_curva_fino);
+Trayectoria_Curva = ppval(cs, t_fino_curva);
+
+%% 4. ENSAMBLE TOTAL DE LA TRAYECTORIA
+% Unimos el tramo recto con la curva (descartamos el primer punto de la curva
+% para no duplicar el punto de empalme en L_bit)
+X = [X_recto, Trayectoria_Curva(1, 2:end)];
+Y = [Y_recto, Trayectoria_Curva(2, 2:end)];
+Z = [Z_recto, Trayectoria_Curva(3, 2:end)];
+
+%% 5. ANÁLISIS GEOMÉTRICO Y CURVATURA
+% Calculamos la curvatura SOLO de la parte curva (el tramo recto tiene K=0)
+dX_c = gradient(Trayectoria_Curva(1, :), t_fino_curva);
+dY_c = gradient(Trayectoria_Curva(2, :), t_fino_curva);
+dZ_c = gradient(Trayectoria_Curva(3, :), t_fino_curva);
+
+ddX_c = gradient(dX_c, t_fino_curva);
+ddY_c = gradient(dY_c, t_fino_curva);
+ddZ_c = gradient(dZ_c, t_fino_curva);
+
+ds_c = sqrt(dX_c.^2 + dY_c.^2 + dZ_c.^2);
+
+% Curvatura en el espacio 3D (Magnitud del producto cruz analítico)
+Numerador_K = sqrt((dY_c.*ddZ_c - dZ_c.*ddY_c).^2 + ...
+                   (dZ_c.*ddX_c - dX_c.*ddZ_c).^2 + ...
+                   (dX_c.*ddY_c - dY_c.*ddX_c).^2);
+Curvatura_Curva = Numerador_K ./ (ds_c.^3);
+
+% Curvatura total de la trayectoria
+Curvatura = [zeros(1, N_recto), Curvatura_Curva(2:end)];
+
+Max_Curvatura = max(Curvatura);
+Min_Radio_Real = 1 / Max_Curvatura;
+
+%% 6. EXPORTACIÓN DE VARIABLES PARA EL CONTROLADOR (FEEDFORWARD)
+% Calculamos diferenciales reales paso a paso
+dX_tot = diff(X);
+dY_tot = diff(Y);
+dZ_tot = diff(Z);
+ds_tot = sqrt(dX_tot.^2 + dY_tot.^2 + dZ_tot.^2);
+
+% Variable Independiente: Longitud total perforada a lo largo del pozo
+S_perforada = [0, cumsum(ds_tot)]; 
+
+% Variables Dependientes: Inclinación y Azimut deseados en cada milímetro
+Theta_ref = acos(dZ_tot ./ ds_tot);
+Theta_ref = [Theta_ref, Theta_ref(end)]; % Rellenar último valor
+
+Phi_ref = atan2(dY_tot, dX_tot);
+Phi_ref = unwrap(Phi_ref);               % Evitar saltos de pi a -pi
+Phi_ref = [Phi_ref, Phi_ref(end)];       % Rellenar último valor
+
+% --- REPORTE EN CONSOLA ---
+fprintf('==================================================\n');
+fprintf('   REPORTE DE TRAYECTORIA DIRECCIONAL\n');
+fprintf('==================================================\n');
+fprintf(' Longitud total a perforar (S): %.2f mm\n', S_perforada(end));
+fprintf(' Profundidad final alcanzada (Z): %.2f mm\n', Z(end));
+fprintf(' Radio de curvatura mínimo logrado: %.2f mm\n', Min_Radio_Real);
+fprintf('--------------------------------------------------\n');
+
+if Min_Radio_Real < R_min
+    fprintf(2, ' [!] ALERTA CRÍTICA: Radio menor a %.2f mm.\n', R_min);
+    fprintf(2, '     El equipo se atascará. Ajustar waypoints.\n');
+else
+    disp(' [OK] Geometría fluida y dentro de los límites físicos.');
+end
+fprintf('==================================================\n');
+
+%% 7. VISUALIZACIÓN 3D
+fig = figure('Name', 'Generador de Trayectoria 3D', 'Color', 'w');
+% Dibujamos la trayectoria coloreando según la exigencia (curvatura)
+scatter3(X, Y, Z, 15, Curvatura, 'filled'); 
+hold on; grid on;
+
+% Forzamos escala real 1:1:1 para no deformar la percepción visual
+axis equal; 
+
+% Ploteo de puntos de control y tramo inicial de referencia
+plot3(P_global(1,:), P_global(2,:), P_global(3,:), 'ko', 'MarkerSize', 7, 'LineWidth', 2, 'MarkerFaceColor', 'w'); 
+plot3([P0(1), P1(1)], [P0(2), P1(2)], [P0(3), P1(3)], 'r-', 'LineWidth', 2.5); 
+
+% Configuración estética de la barra de colores
+colormap(jet);
+cb = colorbar;
+ylabel(cb, 'Curvatura \kappa [1/mm]', 'FontSize', 10);
+caxis([0 K_max]); 
+
+title('Trayectoria Planificada', 'FontSize', 12, 'FontWeight', 'bold');
+xlabel('Desplazamiento Eje X [mm]');
+ylabel('Desplazamiento Eje Y [mm]');
+zlabel('Profundidad Eje Z [mm]');
+set(gca, 'ZDir', 'reverse'); % Convención de perforación (Z positivo hacia abajo)
+legend('Trayectoria', 'Waypoints', 'Tramo Rígido Inicial', 'Location', 'best');
+view(35, 25);
