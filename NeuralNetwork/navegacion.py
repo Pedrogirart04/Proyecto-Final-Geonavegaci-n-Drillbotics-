@@ -15,6 +15,7 @@ Contiene:
 import numpy as np
 from config import KAPPA_MAX_DEG
 from optimizador import control_completo
+from config import KAPPA_MAX_DEG, KAPPA_MAX_CONTROL_DEG
 
 
 # ─────────────────────────────────────────────────────────────
@@ -118,11 +119,10 @@ def calcular_curvatura_deseada(pos_actual, I_actual, A_actual,
     dIds_deseado = (I_deseado - I_actual) / ds_ahead
     dAds_deseado = (A_deseado - A_actual) / ds_ahead
 
-    # Paso 5 —  Limitar curvatura para evitar sobrecompensación
-    kappa_max_control = 0.5 / ds_ahead  # °/mm — máximo 0.5° de corrección por paso
+    # Paso 5 — Limitar curvatura para evitar sobrecompensación
     kappa = np.sqrt(dIds_deseado**2 + dAds_deseado**2)
-    if kappa > kappa_max_control:
-        factor = kappa_max_control / kappa
+    if kappa > KAPPA_MAX_CONTROL_DEG:
+        factor = KAPPA_MAX_CONTROL_DEG / kappa
         dIds_deseado *= factor
         dAds_deseado *= factor
 

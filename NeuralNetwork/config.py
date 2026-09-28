@@ -30,6 +30,7 @@ F_MAX   = 200.0    # Fuerza máxima por pata [N]
 R_MIN         = 186.43                          # [mm]
 KAPPA_MAX     = 1.0 / R_MIN                    # [1/mm] ≈ 5.36e-3
 KAPPA_MAX_DEG = KAPPA_MAX * (180.0 / np.pi)    # [°/mm] ≈ 0.307
+KAPPA_MAX_CONTROL_DEG = 0.0175   # [°/mm] límite de corrección por paso
 
 
 

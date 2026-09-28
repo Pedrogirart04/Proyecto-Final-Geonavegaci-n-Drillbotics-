@@ -21,66 +21,57 @@ class TrayectoriaIdeal:
     interpola los waypoints con condición de arranque vertical.
     """
 
-    def __init__(self, waypoints=None, L_bit=88.0):
-        """
-        Args:
-            waypoints : array Nx3 con [x, y, z] en mm.
-                        No incluir el punto de superficie (0,0,0),
-                        se agrega automáticamente.
-            L_bit     : largo del tramo rígido vertical [mm]
-        """
-        # ── Waypoints por defecto (ejemplo) ───────────────────
-        # REEMPLAZAR con los waypoints reales de la competencia
-        if waypoints is None:
-            waypoints = np.array([
-                [0.0,    0.0,    120.0],   # P1
-                [64.3,   0.0,    360.0],   # P2
-                [107.2,  0.0,    520.0],   # P3
-            ])
+def __init__(self, waypoints_curva=None, L_bit=120.0):
+    """
+    Args:
+        waypoints_curva : array (2,3) con [x, y, z] de los dos waypoints
+                          que definen la parte direccional (P2, P3).
+                          El primer waypoint (P1) queda fijo en
+                          (0, 0, L_bit): fin del tramo recto y arranque
+                          de la curva, con tangente vertical exacta ahí.
+        L_bit           : largo del tramo rígido vertical [mm]
+    """
+    if waypoints_curva is None:
+        waypoints_curva = np.array([
+            [64.3,   0.0,    360.0],   # P2
+            [107.2,  0.0,    520.0],   # P3
+        ])
 
-        self.L_bit = L_bit
-        self.P0 = np.array([0.0, 0.0, 0.0])  # Superficie
+    self.L_bit = L_bit
+    self.P0 = np.array([0.0, 0.0, 0.0])
+    self.P1 = np.array([0.0, 0.0, L_bit])
 
-        # P1 es el primer waypoint — define el fin del tramo recto
-        self.P1 = waypoints[0]
-        self.waypoints_curva = waypoints  # P1, P2, P3
+    self.waypoints_curva = np.vstack([self.P1, waypoints_curva])  # [P1, P2, P3]
+    self.L_recto = self.L_bit
 
-        # ── Longitud del tramo recto ──────────────────────────
-        self.L_recto = np.linalg.norm(self.P1 - self.P0)
+    puntos_curva = self.waypoints_curva
+    dists = np.sqrt(np.sum(np.diff(puntos_curva, axis=0)**2, axis=1))
+    t_waypoints = np.concatenate([[0], np.cumsum(dists)])
 
-        # ── Parametrización por longitud de cuerda (tramo curvo)
-        puntos_curva = self.waypoints_curva  # shape (N, 3)
-        dists = np.sqrt(np.sum(np.diff(puntos_curva, axis=0)**2, axis=1))
-        t_waypoints = np.concatenate([[0], np.cumsum(dists)])
+    v_start = (self.P1 - self.P0) / self.L_recto
 
-        # ── Dirección de arranque (vertical, desde P0 hacia P1)
-        v_start = (self.P1 - self.P0) / self.L_recto  # vector unitario
+    v_end = (puntos_curva[-1] - puntos_curva[-2])
+    v_end = v_end / (np.linalg.norm(v_end) + 1e-10)
 
-        # Dirección de salida (último tramo)
-        v_end = (puntos_curva[-1] - puntos_curva[-2])
-        v_end = v_end / (np.linalg.norm(v_end) + 1e-10)
+    self.spline_x = CubicSpline(
+        t_waypoints, puntos_curva[:, 0],
+        bc_type=((1, v_start[0]), (1, v_end[0]))
+    )
+    self.spline_y = CubicSpline(
+        t_waypoints, puntos_curva[:, 1],
+        bc_type=((1, v_start[1]), (1, v_end[1]))
+    )
+    self.spline_z = CubicSpline(
+        t_waypoints, puntos_curva[:, 2],
+        bc_type=((1, v_start[2]), (1, v_end[2]))
+    )
 
-        # ── Spline cúbico sujeto (clamped) para cada coordenada
-        self.spline_x = CubicSpline(
-            t_waypoints, puntos_curva[:, 0],
-            bc_type=((1, v_start[0]), (1, v_end[0]))
-        )
-        self.spline_y = CubicSpline(
-            t_waypoints, puntos_curva[:, 1],
-            bc_type=((1, v_start[1]), (1, v_end[1]))
-        )
-        self.spline_z = CubicSpline(
-            t_waypoints, puntos_curva[:, 2],
-            bc_type=((1, v_start[2]), (1, v_end[2]))
-        )
+    self.t_max = t_waypoints[-1]
+    self.z_max = puntos_curva[-1, 2]
 
-        self.t_max = t_waypoints[-1]
-        self.z_max = puntos_curva[-1, 2]
-
-        # ── Precalcular tabla Z → t para búsqueda rápida ─────
-        self._N_tabla = 2000
-        self._t_tabla = np.linspace(0, self.t_max, self._N_tabla)
-        self._z_tabla = self.spline_z(self._t_tabla)
+    self._N_tabla = 2000
+    self._t_tabla = np.linspace(0, self.t_max, self._N_tabla)
+    self._z_tabla = self.spline_z(self._t_tabla)
 
     def _z_a_t(self, z):
         """
@@ -116,17 +107,11 @@ class TrayectoriaIdeal:
             return np.array([0.0, 0.0, 0.0])
 
         if z <= self.L_bit:
-            # Primeros 88mm: estrictamente vertical
+            # Primeros L_bit mm: estrictamente vertical
             return np.array([0.0, 0.0, z])
 
-        if z <= self.P1[2]:
-            # Entre L_bit y P1: transición lineal desde (0,0,L_bit) hacia P1
-            frac = (z - self.L_bit) / (self.P1[2] - self.L_bit + 1e-10)
-            x = frac * self.P1[0]
-            y = frac * self.P1[1]
-            return np.array([x, y, z])
-        
-        else:
+        # Tramo curvo — spline (arranca en L_bit con tangente vertical)
+        if True:
             # Tramo curvo — spline
             t = self._z_a_t(z)
             t = np.clip(t, 0, self.t_max)
@@ -147,10 +132,6 @@ class TrayectoriaIdeal:
         """
         if z <= self.L_bit:
             return np.array([0.0, 0.0, 1.0])
-        if z <= self.P1[2]:
-            # Tramo recto — dirección constante
-            tangente = self.P1 - self.P0
-            return tangente / (np.linalg.norm(tangente) + 1e-10)
         else:
             # Tramo curvo — derivada del spline
             t = self._z_a_t(z)
@@ -192,3 +173,59 @@ class TrayectoriaIdeal:
         den = (np.sqrt(dx**2 + dy**2 + dz_dt**2))**3
 
         return float(num / (den + 1e-12))
+
+
+def generar_waypoints_random(rng=None, max_intentos=500):
+    """
+    Genera los 2 waypoints aleatorios que definen el tramo direccional
+    (P2, P3), dentro del cono admisible. El primer waypoint (P1, fin
+    del tramo recto) es fijo en (0,0,L_bit) y lo pone TrayectoriaIdeal.
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+
+    Z2_range = (260, 400)
+    Z3_range = (450, 550)
+    XY_max = 100.0
+    R_MIN = 186.43
+    I_MAX = 30.0
+    A_MAX = 15.0
+
+    for _ in range(max_intentos):
+        Z2 = rng.uniform(*Z2_range)
+        Z3 = rng.uniform(*Z3_range)
+
+        X2 = rng.uniform(0.3, 0.7) * XY_max
+        X3 = rng.uniform(0.5, 1.0) * XY_max
+
+        Y2 = rng.uniform(-0.25, 0.25) * XY_max
+        Y3 = rng.uniform(-0.30, 0.30) * XY_max
+
+        if np.sqrt(X3**2 + Y3**2) > XY_max:
+            continue
+
+        waypoints_curva = np.array([[X2, Y2, Z2], [X3, Y3, Z3]])
+
+        try:
+            tray = TrayectoriaIdeal(waypoints_curva=waypoints_curva)
+        except Exception:
+            continue
+
+        zs = np.linspace(tray.L_bit + 1, tray.z_max - 1, 200)
+        valida = True
+        for z in zs:
+            kappa = tray.curvatura(z)
+            if kappa > 1e-9 and (1.0 / kappa) < R_MIN:
+                valida = False
+                break
+            dx, dy, dz = tray.direccion(z)
+            inclinacion = np.degrees(np.arccos(np.clip(dz, -1.0, 1.0)))
+            azimut = np.degrees(np.arctan2(dy, dx))
+            if inclinacion > I_MAX or abs(azimut) > A_MAX:
+                valida = False
+                break
+
+        if valida:
+            return waypoints_curva
+
+    raise RuntimeError(f"No se encontró una trayectoria válida en {max_intentos} intentos.")

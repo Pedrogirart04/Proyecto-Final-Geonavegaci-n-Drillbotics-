@@ -12,23 +12,25 @@ Incluye:
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import sys
+from datetime import datetime
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.interpolate import CubicSpline
 
 from modelo import RedBHA
-from trayectoria import TrayectoriaIdeal
 from navegacion import dead_reckoning, ciclo_control
 from datos import desnormalizar_y
-from config import SARTA_K
+from config import SARTA_K, KAPPA_MAX_CONTROL_DEG
 from optimizador import resetear_sector, evaluar_red_roca
+from trayectoria import TrayectoriaIdeal, generar_waypoints_random
 
 # ─────────────────────────────────────────────────────────────
 # PARÁMETROS DE SIMULACIÓN
 # ─────────────────────────────────────────────────────────────
 
 # Ruido del IMU — poner 0 para desactivar
-RUIDO_IMU_I  = 0.05
-RUIDO_IMU_A  = 0.1
+RUIDO_IMU_I  = 0
+RUIDO_IMU_A  = 0
 
 # Variabilidad del UCS
 RUIDO_UCS_LOCAL = 0
@@ -41,6 +43,24 @@ EPSILON_MAX = 28.0
 # Estimación online de ε
 ADAPTACION_ACTIVA  = True
 VENTANA_SUAVIZADO  = 1    # Promediar últimos N valores de ε estimado
+
+
+# ─────────────────────────────────────────────────────────────
+# PARA SALIDA (TXT)
+# ─────────────────────────────────────────────────────────────
+class Tee:
+    """Escribe la salida tanto en consola como en un archivo de texto."""
+    def __init__(self, *streams):
+        self.streams = streams
+    def write(self, data):
+        for s in self.streams:
+            s.write(data)
+    def flush(self):
+        for s in self.streams:
+            s.flush()
+
+
+
 
 
 # ─────────────────────────────────────────────────────────────
@@ -138,15 +158,13 @@ def estimar_epsilon(modelo, stats, kappa_real, F_roca_aplicada):
 # SIMULACIÓN DE PERFORACIÓN
 # ─────────────────────────────────────────────────────────────
 
-def simular_perforacion(modelo, stats):
-    waypoints = np.array([
-        [10.0,   5.0,    180.0],
-        [30.0,   10.0,   350.0],
-        [50.0,   15.0,   520.0],
-    ])
-    trayectoria = TrayectoriaIdeal(waypoints=waypoints)
-
-    LARGO_BHA  = 88.0
+def simular_perforacion(modelo, stats, semilla_trayectoria=None):
+    rng_tray = np.random.default_rng(semilla_trayectoria)
+    waypoints_curva = generar_waypoints_random(rng=rng_tray)
+    trayectoria = TrayectoriaIdeal(waypoints_curva=waypoints_curva)
+    print(f"Waypoints: P1=(0,0,{trayectoria.L_bit}) [fijo], "
+          f"P2={waypoints_curva[0]}, P3={waypoints_curva[1]}")
+    
     ds_paso    = 5.0
     s_total    = 550.0
 
@@ -186,15 +204,17 @@ def simular_perforacion(modelo, stats):
     print(f"{'s':>6} | {'Error':>8} | {'I':>7} | {'A':>7} | "
           f"{'T1':>7} | {'T2':>7} | {'T3':>7} | {'ε_real':>6} | {'ε_est':>6}")
     print("─" * 85)
-
+    
+    historial_I = []
+    historial_A = []
+    VENTANA_IMU = 5
+    
     while s < s_total:
-        historial_I = []
-        historial_A = []
-        VENTANA_IMU = 5
+        
         s += ds_paso
         eps_real = epsilon_perfil(s)
 
-        if s <= LARGO_BHA or pos_real[2] > trayectoria.z_max - ds_paso:
+        if s <= trayectoria.L_bit or pos_real[2] > trayectoria.z_max - ds_paso:
             T1, T2, T3 = 0.0, 0.0, 0.0
             error_pos = 0.0
         else:
@@ -347,6 +367,12 @@ def graficar_simulacion(hist_pos, hist_ideal, hist_error, hist_s, hist_F,
 
 
 if __name__ == "__main__":
+    nombre_log = f"salida_kmax{KAPPA_MAX_CONTROL_DEG}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    archivo_log = open(nombre_log, "w", encoding="utf-8", buffering=1)
+    sys.stdout = Tee(sys.__stdout__, archivo_log)
+
     np.random.seed(42)
     modelo, stats = cargar_modelo("modelo_bha.pth")
     simular_perforacion(modelo, stats)
+
+    archivo_log.close()
