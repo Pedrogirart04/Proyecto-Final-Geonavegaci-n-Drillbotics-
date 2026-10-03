@@ -136,8 +136,18 @@ def control_completo(modelo, stats, dIds_deseado, dAds_deseado, pos_actual, epsi
     from config import SARTA_K
 
     kappa_deseado = np.sqrt(dIds_deseado**2 + dAds_deseado**2) * np.pi / 180
-    
+    delta = np.sqrt(pos_actual[0]**2 + pos_actual[1]**2)
+    F_sarta = SARTA_K * delta
+
     if kappa_deseado < 1e-8:
+        # Sin corrección activa: no hay F_roca, pero la sarta sigue
+        # empujando por su propia deflexión. Se aplica en la dirección
+        # de la deflexión actual (no hay dirección de corrección definida).
+        if delta > 1e-8:
+            theta_deflexion = np.degrees(np.arctan2(pos_actual[1], pos_actual[0]))
+            theta_push = aplicar_filtro_vectorial_theta(theta_deflexion, alpha=ALPHA_FILTRO_THETA)
+            T1, T2, T3 = descomponer_en_pads(F_sarta, theta_push)
+            return T1, T2, T3, F_sarta, 0.0
         return 0.0, 0.0, 0.0, 0.0, 0.0
 
     # 1. Dirección bruta
@@ -149,8 +159,6 @@ def control_completo(modelo, stats, dIds_deseado, dAds_deseado, pos_actual, epsi
 
     # 3. Fuerza de roca y sarta
     F_roca = evaluar_red_roca(modelo, stats, kappa_deseado, epsilon)
-    delta = np.sqrt(pos_actual[0]**2 + pos_actual[1]**2)
-    F_sarta = SARTA_K * delta
     F_total = F_roca + F_sarta
 
     # 4. Descomposición con histéresis y theta suavizado

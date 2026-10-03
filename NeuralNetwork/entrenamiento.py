@@ -143,12 +143,11 @@ def entrenar(modelo, X_train, y_train, X_val, y_val,
         if iteracion % 20 == 0 or iteracion == N_LBFGS - 1:
             print(f"LBFGS {iteracion:5d} | Loss val: {loss_val:.4e}")
 
-    modelo.load_state_dict(mejor_estado_lbfgs)
+        modelo.load_state_dict(mejor_estado_lbfgs)
     print(f"\nBest checkpoint restaurado — mejor val loss L-BFGS: {mejor_val_loss_lbfgs:.4e}")
+    print(f"Tiempo L-BFGS: {time.time() - t_lbfgs:.2f}s")
 
     return historial_train, historial_val
-
-    print(f"Tiempo L-BFGS: {time.time() - t_lbfgs:.2f}s")
 
 def evaluar(modelo, X_val, y_val, stats, historial_train, historial_val):
     """
@@ -167,24 +166,24 @@ def evaluar(modelo, X_val, y_val, stats, historial_train, historial_val):
     print(f"\n{'─'*65}")
     print(f"EVALUACIÓN EN VALIDACIÓN")
     print(f"{'─'*65}")
-    print(f"F_total — Error medio: {error.mean():.4f} N | "
+    print(f"F_roca — Error medio: {error.mean():.4f} N | "
           f"Error max: {error.max():.4f} N")
 
     # Error relativo respecto al rango
     rango = np.abs(y_real[:, 0]).max() + 1e-10
     err_rel = error / rango * 100
-    print(f"F_total — Error relativo máximo: {err_rel.max():.2f}%")
+    print(f"F_roca — Error relativo máximo: {err_rel.max():.2f}%")
 
     # ── Gráficos ──────────────────────────────────────────────
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
     fig.suptitle("Evaluación Red Neuronal BHA", fontsize=14)
 
-    # — F_total: predicho vs real —
+    # — F_roca: predicho vs real —
     axes[0].scatter(y_real[:,0], y_pred_real[:,0], alpha=0.3, s=5)
     lim = max(np.abs(y_real[:,0]).max(), np.abs(y_pred_real[:,0]).max())
     axes[0].plot([0, lim], [0, lim], 'r--', lw=1.5, label="ideal")
-    axes[0].set_xlabel("F_total real [N]")
-    axes[0].set_ylabel("F_total predicho [N]")
+    axes[0].set_xlabel("F_roca real [N]")
+    axes[0].set_ylabel("F_roca predicho [N]")
     axes[0].set_title("Predicho vs Real")
     axes[0].legend()
     axes[0].grid(True)

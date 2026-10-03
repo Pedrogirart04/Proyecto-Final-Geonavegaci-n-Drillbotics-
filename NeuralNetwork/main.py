@@ -1,13 +1,13 @@
 """
 main.py — Ejecución principal
 ==============================
-Orquesta todos los módulos:
-  1. Genera datos sintéticos (o los carga del modelo del paper)
+Orquesta el entrenamiento de la red:
+  1. Carga el dataset real (generado en MATLAB con el modelo de Perneder)
   2. Prepara y normaliza el dataset
   3. Crea la red neuronal
   4. Entrena (Adam + L-BFGS)
-  5. Evalúa con gráficos
-  6. Muestra ejemplo del optimizador inverso
+  5. Ejemplo de uso del controlador completo (red + descomposición en pads)
+  6. Evalúa con gráficos
   7. Guarda el modelo entrenado
 
 Para correr: python main.py

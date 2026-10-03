@@ -21,57 +21,57 @@ class TrayectoriaIdeal:
     interpola los waypoints con condición de arranque vertical.
     """
 
-def __init__(self, waypoints_curva=None, L_bit=120.0):
-    """
-    Args:
-        waypoints_curva : array (2,3) con [x, y, z] de los dos waypoints
-                          que definen la parte direccional (P2, P3).
-                          El primer waypoint (P1) queda fijo en
-                          (0, 0, L_bit): fin del tramo recto y arranque
-                          de la curva, con tangente vertical exacta ahí.
-        L_bit           : largo del tramo rígido vertical [mm]
-    """
-    if waypoints_curva is None:
-        waypoints_curva = np.array([
-            [64.3,   0.0,    360.0],   # P2
-            [107.2,  0.0,    520.0],   # P3
-        ])
+    def __init__(self, waypoints_curva=None, L_bit=120.0):
+        """
+        Args:
+            waypoints_curva : array (2,3) con [x, y, z] de los dos waypoints
+                            que definen la parte direccional (P2, P3).
+                            El primer waypoint (P1) queda fijo en
+                            (0, 0, L_bit): fin del tramo recto y arranque
+                            de la curva, con tangente vertical exacta ahí.
+            L_bit           : largo del tramo rígido vertical [mm]
+        """
+        if waypoints_curva is None:
+            waypoints_curva = np.array([
+                [64.3,   0.0,    360.0],   # P2
+                [107.2,  0.0,    520.0],   # P3
+            ])
 
-    self.L_bit = L_bit
-    self.P0 = np.array([0.0, 0.0, 0.0])
-    self.P1 = np.array([0.0, 0.0, L_bit])
+        self.L_bit = L_bit
+        self.P0 = np.array([0.0, 0.0, 0.0])
+        self.P1 = np.array([0.0, 0.0, L_bit])
 
-    self.waypoints_curva = np.vstack([self.P1, waypoints_curva])  # [P1, P2, P3]
-    self.L_recto = self.L_bit
+        self.waypoints_curva = np.vstack([self.P1, waypoints_curva])  # [P1, P2, P3]
+        self.L_recto = self.L_bit
 
-    puntos_curva = self.waypoints_curva
-    dists = np.sqrt(np.sum(np.diff(puntos_curva, axis=0)**2, axis=1))
-    t_waypoints = np.concatenate([[0], np.cumsum(dists)])
+        puntos_curva = self.waypoints_curva
+        dists = np.sqrt(np.sum(np.diff(puntos_curva, axis=0)**2, axis=1))
+        t_waypoints = np.concatenate([[0], np.cumsum(dists)])
 
-    v_start = (self.P1 - self.P0) / self.L_recto
+        v_start = (self.P1 - self.P0) / self.L_recto
 
-    v_end = (puntos_curva[-1] - puntos_curva[-2])
-    v_end = v_end / (np.linalg.norm(v_end) + 1e-10)
+        v_end = (puntos_curva[-1] - puntos_curva[-2])
+        v_end = v_end / (np.linalg.norm(v_end) + 1e-10)
 
-    self.spline_x = CubicSpline(
-        t_waypoints, puntos_curva[:, 0],
-        bc_type=((1, v_start[0]), (1, v_end[0]))
-    )
-    self.spline_y = CubicSpline(
-        t_waypoints, puntos_curva[:, 1],
-        bc_type=((1, v_start[1]), (1, v_end[1]))
-    )
-    self.spline_z = CubicSpline(
-        t_waypoints, puntos_curva[:, 2],
-        bc_type=((1, v_start[2]), (1, v_end[2]))
-    )
+        self.spline_x = CubicSpline(
+            t_waypoints, puntos_curva[:, 0],
+            bc_type=((1, v_start[0]), (1, v_end[0]))
+        )
+        self.spline_y = CubicSpline(
+            t_waypoints, puntos_curva[:, 1],
+            bc_type=((1, v_start[1]), (1, v_end[1]))
+        )
+        self.spline_z = CubicSpline(
+            t_waypoints, puntos_curva[:, 2],
+            bc_type=((1, v_start[2]), (1, v_end[2]))
+        )
 
-    self.t_max = t_waypoints[-1]
-    self.z_max = puntos_curva[-1, 2]
+        self.t_max = t_waypoints[-1]
+        self.z_max = puntos_curva[-1, 2]
 
-    self._N_tabla = 2000
-    self._t_tabla = np.linspace(0, self.t_max, self._N_tabla)
-    self._z_tabla = self.spline_z(self._t_tabla)
+        self._N_tabla = 2000
+        self._t_tabla = np.linspace(0, self.t_max, self._N_tabla)
+        self._z_tabla = self.spline_z(self._t_tabla)
 
     def _z_a_t(self, z):
         """

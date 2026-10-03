@@ -166,7 +166,7 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None):
           f"P2={waypoints_curva[0]}, P3={waypoints_curva[1]}")
     
     ds_paso    = 5.0
-    s_total    = 550.0
+    s_total    = trayectoria.z_max
 
     epsilon_perfil = generar_perfil_epsilon(s_total, semilla=42)
     resetear_sector()
