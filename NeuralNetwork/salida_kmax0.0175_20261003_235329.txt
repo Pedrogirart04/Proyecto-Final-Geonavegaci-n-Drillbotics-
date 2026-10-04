@@ -1,0 +1,1 @@
+Modelo cargado desde: modelo_red_k_F_UCS_ROP_RPM.pth

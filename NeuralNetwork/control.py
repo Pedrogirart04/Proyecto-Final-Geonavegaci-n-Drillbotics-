@@ -412,7 +412,7 @@ if __name__ == "__main__":
     sys.stdout = Tee(sys.__stdout__, archivo_log)
 
     np.random.seed(42)
-    modelo, stats = cargar_modelo("modelo_bha.pth")
+    modelo, stats = cargar_modelo("modelo_red_k_F_UCS_ROP_RPM.pth")
     seed = 174
     simular_perforacion(modelo, stats, semilla_trayectoria=seed,
                                        adaptacion_activa=True,  verbose=False, graficar=True)
