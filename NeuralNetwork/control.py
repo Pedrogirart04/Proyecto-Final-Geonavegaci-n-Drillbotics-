@@ -32,6 +32,12 @@ from trayectoria import TrayectoriaIdeal, generar_waypoints_random
 RUIDO_IMU_I  = 0.5
 RUIDO_IMU_A  = 2
 
+# ROP y RPM — fijos y conocidos en cada corrida (los fija el operador,
+# a diferencia del UCS que hay que estimar)
+ROP_SIM = 15.0    # [mm/min] <<<< AJUSTAR: dentro de [5,30] (rango del dataset)
+RPM_SIM = 1500.0  # [rpm]    <<<< AJUSTAR: dentro de [1000,2000] (rango del dataset)
+
+
 # Variabilidad del UCS
 RUIDO_UCS_LOCAL = 0.5
 N_NODOS_UCS    = 6
@@ -101,23 +107,23 @@ def generar_perfil_epsilon(z_max, semilla=None):
 # PLANTA: INVERSIÓN DE LA RED NEURONAL
 # ─────────────────────────────────────────────────────────────
 
-def calcular_kappa_real(modelo, stats, F_comandada, epsilon_real):
+def calcular_kappa_real(modelo, stats, F_comandada, rop, rpm, epsilon_real):
     """Dada F y ε_real, encuentra κ_real por bisección usando evaluar_red_roca."""
     kappa_min = float(stats['X_min'][0])
     kappa_max = float(stats['X_max'][0])
 
-    F_min = evaluar_red_roca(modelo, stats, kappa_min, epsilon_real)
+    F_min = evaluar_red_roca(modelo, stats, kappa_min, rop, rpm, epsilon_real)
     if F_comandada <= F_min:
         return kappa_min * (F_comandada / F_min) if F_min > 0 else 0.0
 
-    F_max = evaluar_red_roca(modelo, stats, kappa_max, epsilon_real)
+    F_max = evaluar_red_roca(modelo, stats, kappa_max, rop, rpm, epsilon_real)
     if F_comandada >= F_max:
         return kappa_max
 
     k_lo, k_hi = kappa_min, kappa_max
     for _ in range(50):
         k_mid = (k_lo + k_hi) / 2
-        if evaluar_red_roca(modelo, stats, k_mid, epsilon_real) < F_comandada:
+        if evaluar_red_roca(modelo, stats, k_mid, rop, rpm, epsilon_real) < F_comandada:
             k_lo = k_mid
         else:
             k_hi = k_mid
@@ -125,14 +131,10 @@ def calcular_kappa_real(modelo, stats, F_comandada, epsilon_real):
     return (k_lo + k_hi) / 2
 
 
-# ─────────────────────────────────────────────────────────────
-# ESTIMACIÓN DE ε POR BISECCIÓN
-# ─────────────────────────────────────────────────────────────
-
-def estimar_epsilon(modelo, stats, kappa_real, F_roca_aplicada):
+def estimar_epsilon(modelo, stats, kappa_real, rop, rpm, F_roca_aplicada):
     """Dado κ_real y F_roca aplicada, encuentra ε por bisección usando evaluar_red_roca."""
-    F_at_min = evaluar_red_roca(modelo, stats, kappa_real, EPSILON_MIN)
-    F_at_max = evaluar_red_roca(modelo, stats, kappa_real, EPSILON_MAX)
+    F_at_min = evaluar_red_roca(modelo, stats, kappa_real, rop, rpm, EPSILON_MIN)
+    F_at_max = evaluar_red_roca(modelo, stats, kappa_real, rop, rpm, EPSILON_MAX)
 
     if F_roca_aplicada <= min(F_at_min, F_at_max):
         return EPSILON_MIN
@@ -142,7 +144,7 @@ def estimar_epsilon(modelo, stats, kappa_real, F_roca_aplicada):
     e_lo, e_hi = EPSILON_MIN, EPSILON_MAX
     for _ in range(50):
         e_mid = (e_lo + e_hi) / 2
-        F_mid = evaluar_red_roca(modelo, stats, kappa_real, e_mid)
+        F_mid = evaluar_red_roca(modelo, stats, kappa_real, rop, rpm, e_mid)
         if F_mid < F_roca_aplicada:
             e_lo = e_mid
         else:
@@ -150,16 +152,20 @@ def estimar_epsilon(modelo, stats, kappa_real, F_roca_aplicada):
 
     return (e_lo + e_hi) / 2
 
-
 # ─────────────────────────────────────────────────────────────
 # SIMULACIÓN DE PERFORACIÓN
 # ─────────────────────────────────────────────────────────────
 
 def simular_perforacion(modelo, stats, semilla_trayectoria=None,
                          adaptacion_activa=None, verbose=True, graficar=True,
-                         error_saturacion=None, k_d=None):
+                         error_saturacion=None, k_d=None,
+                         rop=None, rpm=None):
     if adaptacion_activa is None:
         adaptacion_activa = ADAPTACION_ACTIVA
+    if rop is None:
+        rop = ROP_SIM
+    if rpm is None:
+        rpm = RPM_SIM
 
     rng_tray = np.random.default_rng(semilla_trayectoria)
     waypoints_curva = generar_waypoints_random(rng=rng_tray)
@@ -206,6 +212,7 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None,
         print("\n" + "═" * 85)
         print("SIMULACIÓN DE PERFORACIÓN")
         print("═" * 85)
+        print(f"  ROP={rop:.1f} mm/min, RPM={rpm:.0f}")
         print(f"  Ruido IMU: σ_I={RUIDO_IMU_I}°, σ_A={RUIDO_IMU_A}°")
         print(f"  Ruido UCS local: σ={RUIDO_UCS_LOCAL} MPa")
         print(f"  Adaptación ε: {'BISECCIÓN' if adaptacion_activa else 'DESACTIVADA'}")
@@ -231,7 +238,7 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None,
             F_opt, error_pos, curv_des = ciclo_control(
                 modelo, stats, trayectoria,
                 pos_real, I_medido, A_medido, pos_real[2],
-                epsilon_estimado,
+                rop, rpm, epsilon_estimado,
                 error_saturacion=error_saturacion,
                 error_anterior=error_anterior,
                 k_d=k_d
@@ -242,9 +249,9 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None,
             kappa_comandado = np.sqrt(curv_des[0]**2 + curv_des[1]**2) * np.pi / 180
 
             if kappa_comandado > 1e-8:
-                F_roca_comandada = evaluar_red_roca(modelo, stats, kappa_comandado, epsilon_estimado)
+                F_roca_comandada = evaluar_red_roca(modelo, stats, kappa_comandado, rop, rpm, epsilon_estimado)
 
-                kappa_real = calcular_kappa_real(modelo, stats, F_roca_comandada, eps_real)
+                kappa_real = calcular_kappa_real(modelo, stats, F_roca_comandada, rop, rpm, eps_real)
 
                 historial_kappa_cmd.append(kappa_comandado)
                 historial_kappa_real.append(kappa_real)
@@ -257,9 +264,9 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None,
                 # ── Estimación de ε por bisección ─────────────
                 if adaptacion_activa and kappa_real > 1e-8:
                     eps_instantaneo = estimar_epsilon(
-                        modelo, stats, kappa_real, F_roca_comandada
+                        modelo, stats, kappa_real, rop, rpm, F_roca_comandada
                     )
-
+                    
                     historial_eps_estimados.append(eps_instantaneo)
                     if len(historial_eps_estimados) > VENTANA_SUAVIZADO:
                         historial_eps_estimados.pop(0)

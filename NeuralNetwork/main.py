@@ -97,7 +97,13 @@ if __name__ == "__main__":
 
     # Agregar posición de ejemplo
     pos_ejemplo = np.array([50.0, 20.0, 300.0])
+    rop_ejemplo = 15.0
+    rpm_ejemplo = 1500.0
     epsilon_ejemplo = 25.0  # UCS estimado [MPa]
+
+    T1, T2, T3, F_total, kappa = control_completo(
+        modelo, stats, dIds_objetivo, dAds_objetivo, pos_ejemplo, rop_ejemplo, rpm_ejemplo, epsilon_ejemplo
+    )
 
     T1, T2, T3, F_total, kappa = control_completo(
         modelo, stats, dIds_objetivo, dAds_objetivo, pos_ejemplo, epsilon_ejemplo

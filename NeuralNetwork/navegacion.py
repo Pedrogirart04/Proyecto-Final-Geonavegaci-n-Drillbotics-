@@ -175,7 +175,7 @@ def calcular_curvatura_deseada(pos_actual, I_actual, A_actual,
 # ─────────────────────────────────────────────────────────────
 
 def ciclo_control(modelo, stats, trayectoria,
-                  pos_actual, I_actual, A_actual, z_actual, epsilon,
+                  pos_actual, I_actual, A_actual, z_actual, rop, rpm, epsilon,
                   error_saturacion=None, error_anterior=None, k_d=None):
     """
     Ejecuta un ciclo completo de control:
@@ -189,6 +189,7 @@ def ciclo_control(modelo, stats, trayectoria,
         pos_actual    : [x, y, z] actual [mm]
         I_actual, A_actual : inclinación y azimut actuales [°]
         z_actual      : profundidad actual [mm]
+        rop, rpm      : ROP y RPM fijos de la corrida (conocidos, no estimados)
         error_saturacion : ver calcular_curvatura_deseada
         error_anterior   : ver calcular_curvatura_deseada
         k_d              : ver calcular_curvatura_deseada
@@ -198,7 +199,6 @@ def ciclo_control(modelo, stats, trayectoria,
         error_pos : distancia lateral al punto ideal [mm]
         curv_des  : (dI/ds, dA/ds) curvatura comandada [°/mm]
     """
-    # Paso 1 — Lookahead → curvatura deseada
     dIds_des, dAds_des = calcular_curvatura_deseada(
         pos_actual, I_actual, A_actual,
         trayectoria, z_actual,
@@ -207,12 +207,10 @@ def ciclo_control(modelo, stats, trayectoria,
         k_d=k_d
     )
 
-    # Paso 2 — Red neuronal + descomposición en pads
     T1, T2, T3, F_total, kappa = control_completo(
-        modelo, stats, dIds_des, dAds_des, pos_actual, epsilon
+        modelo, stats, dIds_des, dAds_des, pos_actual, rop, rpm, epsilon
     )
 
-    # Paso 3 — Error lateral para monitoreo (no afecta el control)
     pos_ideal = trayectoria.evaluar(z_actual)
     error_pos = np.linalg.norm(pos_actual[:2] - pos_ideal[:2])
 
