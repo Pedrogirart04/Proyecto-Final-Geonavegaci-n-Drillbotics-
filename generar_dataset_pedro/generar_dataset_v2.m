@@ -69,7 +69,7 @@ XY_max = 100;  % [mm]
 % Una fila por trayectoria FINALMENTE válida (no por intento). Si una
 % combinación falla por geometría, se reintenta con la misma fila y
 % nuevos waypoints, así la estratificación LHS se preserva en el dataset final.
-lhs_samples = lhsdesign(N_trayectorias, 3);
+lhs_samples = lhs_manual(N_trayectorias, 3);
 ROP_vals = ROP_range(1) + lhs_samples(:,1) * diff(ROP_range);
 RPM_vals = RPM_range(1) + lhs_samples(:,2) * diff(RPM_range);
 UCS_vals = UCS_range(1) + lhs_samples(:,3) * diff(UCS_range);
@@ -121,6 +121,12 @@ while trayectorias_validas < N_trayectorias && intentos < max_intentos
         continue;
     end
 
+    R_tray = Matriz_Trayectoria(:, 4);
+    R_min_real = min(R_tray(R_tray > 0 & R_tray < 10000));
+    if isempty(R_min_real) || R_min_real < R_min
+        fprintf('  [!] Intento %d viola R_min (R=%.1f mm), descartado.\n', intentos, R_min_real);
+        continue;
+    end
     %% 7.4 Calcular fuerzas (cadena completa)
     try
         Matriz_Fuerzas = calcular_fuerzas_Perneder_silent(Matriz_Trayectoria, ROP_mm_min, RPM, params_roca, params_trepano);

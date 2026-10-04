@@ -60,9 +60,6 @@ class Tee:
             s.flush()
 
 
-
-
-
 # ─────────────────────────────────────────────────────────────
 # CARGA DEL MODELO
 # ─────────────────────────────────────────────────────────────
@@ -158,13 +155,19 @@ def estimar_epsilon(modelo, stats, kappa_real, F_roca_aplicada):
 # SIMULACIÓN DE PERFORACIÓN
 # ─────────────────────────────────────────────────────────────
 
-def simular_perforacion(modelo, stats, semilla_trayectoria=None):
+def simular_perforacion(modelo, stats, semilla_trayectoria=None,
+                         adaptacion_activa=None, verbose=True, graficar=True,
+                         error_saturacion=None, k_d=None):
+    if adaptacion_activa is None:
+        adaptacion_activa = ADAPTACION_ACTIVA
+
     rng_tray = np.random.default_rng(semilla_trayectoria)
     waypoints_curva = generar_waypoints_random(rng=rng_tray)
     trayectoria = TrayectoriaIdeal(waypoints_curva=waypoints_curva)
-    print(f"Waypoints: P1=(0,0,{trayectoria.L_bit}) [fijo], "
-          f"P2={waypoints_curva[0]}, P3={waypoints_curva[1]}")
-    
+    if verbose:
+        print(f"Waypoints: P1=(0,0,{trayectoria.L_bit}) [fijo], "
+              f"P2={waypoints_curva[0]}, P3={waypoints_curva[1]}")
+
     ds_paso    = 5.0
     s_total    = trayectoria.z_max
 
@@ -185,6 +188,9 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None):
     epsilon_estimado = 25.0
     historial_eps_estimados = []  # ventana para suavizar
 
+    # Memoria del controlador (término derivativo)
+    error_anterior = 0.0
+
     # Historial
     historial_pos      = [pos_real.copy()]
     historial_ideal    = [trayectoria.evaluar(0.0)]
@@ -193,24 +199,27 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None):
     historial_F        = []
     historial_eps_real = [epsilon_perfil(0.0)]
     historial_eps_est  = [epsilon_estimado]
+    historial_kappa_cmd  = []
+    historial_kappa_real = []
 
-    print("\n" + "═" * 85)
-    print("SIMULACIÓN DE PERFORACIÓN")
-    print("═" * 85)
-    print(f"  Ruido IMU: σ_I={RUIDO_IMU_I}°, σ_A={RUIDO_IMU_A}°")
-    print(f"  Ruido UCS local: σ={RUIDO_UCS_LOCAL} MPa")
-    print(f"  Adaptación ε: {'BISECCIÓN' if ADAPTACION_ACTIVA else 'DESACTIVADA'}")
-    print("─" * 85)
-    print(f"{'s':>6} | {'Error':>8} | {'I':>7} | {'A':>7} | "
-          f"{'T1':>7} | {'T2':>7} | {'T3':>7} | {'ε_real':>6} | {'ε_est':>6}")
-    print("─" * 85)
-    
+    if verbose:
+        print("\n" + "═" * 85)
+        print("SIMULACIÓN DE PERFORACIÓN")
+        print("═" * 85)
+        print(f"  Ruido IMU: σ_I={RUIDO_IMU_I}°, σ_A={RUIDO_IMU_A}°")
+        print(f"  Ruido UCS local: σ={RUIDO_UCS_LOCAL} MPa")
+        print(f"  Adaptación ε: {'BISECCIÓN' if adaptacion_activa else 'DESACTIVADA'}")
+        print("─" * 85)
+        print(f"{'s':>6} | {'Error':>8} | {'I':>7} | {'A':>7} | "
+              f"{'T1':>7} | {'T2':>7} | {'T3':>7} | {'ε_real':>6} | {'ε_est':>6}")
+        print("─" * 85)
+
     historial_I = []
     historial_A = []
     VENTANA_IMU = 5
-    
+
     while s < s_total:
-        
+
         s += ds_paso
         eps_real = epsilon_perfil(s)
 
@@ -222,7 +231,10 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None):
             F_opt, error_pos, curv_des = ciclo_control(
                 modelo, stats, trayectoria,
                 pos_real, I_medido, A_medido, pos_real[2],
-                epsilon_estimado
+                epsilon_estimado,
+                error_saturacion=error_saturacion,
+                error_anterior=error_anterior,
+                k_d=k_d
             )
             T1, T2, T3 = F_opt
 
@@ -230,18 +242,20 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None):
             kappa_comandado = np.sqrt(curv_des[0]**2 + curv_des[1]**2) * np.pi / 180
 
             if kappa_comandado > 1e-8:
-                # Se usa evaluar_red_roca en vez de llamar a PyTorch a mano
                 F_roca_comandada = evaluar_red_roca(modelo, stats, kappa_comandado, epsilon_estimado)
 
                 kappa_real = calcular_kappa_real(modelo, stats, F_roca_comandada, eps_real)
+
+                historial_kappa_cmd.append(kappa_comandado)
+                historial_kappa_real.append(kappa_real)
 
                 factor = (kappa_real / kappa_comandado) * (180 / np.pi)
                 dIds_real = curv_des[0] * factor
                 dAds_real = curv_des[1] * factor
 
-                
+
                 # ── Estimación de ε por bisección ─────────────
-                if ADAPTACION_ACTIVA and kappa_real > 1e-8:
+                if adaptacion_activa and kappa_real > 1e-8:
                     eps_instantaneo = estimar_epsilon(
                         modelo, stats, kappa_real, F_roca_comandada
                     )
@@ -258,16 +272,17 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None):
                 F_roca_comandada = 0.0
                 kappa_real = 0.0
 
-            print(f"  DEBUG s={s:.0f} | κ_cmd={kappa_comandado:.6f} | κ_real={kappa_real:.6f} | "
-                                f"F_cmd={F_roca_comandada:.2f} | ε_est={epsilon_estimado:.2f} | ε_real={eps_real:.2f} | "
-                                f"θ_push={(np.degrees(np.arctan2(curv_des[1], curv_des[0])) + 180) % 360:.1f}°")
-        
+            if verbose:
+                print(f"  DEBUG s={s:.0f} | κ_cmd={kappa_comandado:.6f} | κ_real={kappa_real:.6f} | "
+                                    f"F_cmd={F_roca_comandada:.2f} | ε_est={epsilon_estimado:.2f} | ε_real={eps_real:.2f} | "
+                                    f"θ_push={(np.degrees(np.arctan2(curv_des[1], curv_des[0])) + 180) % 360:.1f}°")
+
             I_real += dIds_real * ds_paso
             A_real += dAds_real * ds_paso
 
             I_medido = I_real + np.random.normal(0, RUIDO_IMU_I) if RUIDO_IMU_I > 0 else I_real
             A_medido = A_real + np.random.normal(0, RUIDO_IMU_A) if RUIDO_IMU_A > 0 else A_real
-            
+
             historial_I.append(I_medido)
             historial_A.append(A_medido)
             if len(historial_I) > VENTANA_IMU:
@@ -287,14 +302,32 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None):
         historial_eps_real.append(eps_real)
         historial_eps_est.append(epsilon_estimado)
 
-        if int(s) % 50 == 0 or s >= s_total:
+        error_anterior = error_pos
+
+        if verbose and (int(s) % 50 == 0 or s >= s_total):
             print(f"{s:6.1f} | {error_pos:8.3f} | {I_real:7.2f} | {A_real:7.2f} | "
                   f"{T1:7.1f} | {T2:7.1f} | {T3:7.1f} | {eps_real:6.1f} | {epsilon_estimado:6.1f}")
 
-    graficar_simulacion(historial_pos, historial_ideal,
-                        historial_error, historial_s, historial_F,
-                        historial_eps_real, historial_eps_est,
-                        trayectoria.waypoints_curva)
+    if graficar:
+        graficar_simulacion(historial_pos, historial_ideal,
+                            historial_error, historial_s, historial_F,
+                            historial_eps_real, historial_eps_est,
+                            trayectoria.waypoints_curva)
+
+    error_arr = np.array(historial_error)
+    metricas = {
+        'error_max':   float(np.max(error_arr)),
+        'error_rms':   float(np.sqrt(np.mean(error_arr**2))),
+        'error_final': float(error_arr[-1]),
+    }
+    if len(historial_kappa_cmd) > 0:
+        kcmd  = np.array(historial_kappa_cmd)
+        kreal = np.array(historial_kappa_real)
+        metricas['kappa_error_rel_mean'] = float(np.mean(np.abs(kreal - kcmd) / kcmd))
+    else:
+        metricas['kappa_error_rel_mean'] = float('nan')
+
+    return metricas
 
 
 # ─────────────────────────────────────────────────────────────
