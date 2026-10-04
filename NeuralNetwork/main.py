@@ -84,7 +84,15 @@ if __name__ == "__main__":
     )
     print(f"Tiempo entrenamiento: {time.time() - t0:.2f}s")
 
-    # ── 5. Ejemplo Sist control ────────────────────────
+        # ── 5. Guardar modelo ─────────────────────────────────────
+    torch.save({
+        'model_state_dict': modelo.state_dict(),
+        'stats': stats,
+        'capas': ARQUITECTURA
+    }, "modelo_red_k_F_UCS_ROP_RPM.pth")
+    print("\nModelo guardado en: modelo_red_k_F_UCS_ROP_RPM.pth")
+    
+    # ── 6. Ejemplo Sist control ────────────────────────
     t0 = time.time()
     print("\n" + "=" * 65)
     print("EJEMPLO CONTROL COMPLETO")
@@ -105,10 +113,6 @@ if __name__ == "__main__":
         modelo, stats, dIds_objetivo, dAds_objetivo, pos_ejemplo, rop_ejemplo, rpm_ejemplo, epsilon_ejemplo
     )
 
-    T1, T2, T3, F_total, kappa = control_completo(
-        modelo, stats, dIds_objetivo, dAds_objetivo, pos_ejemplo, epsilon_ejemplo
-    )
-
     print(f"\nResultados:")
     print(f"  kappa deseado: {kappa:.6f} 1/mm")
     print(f"  F_total:       {F_total:.2f} N")
@@ -119,7 +123,7 @@ if __name__ == "__main__":
     print(f"Tiempo optimizador inverso: {time.time() - t0:.2f}s")
 
 
-# ── 6. Evaluar ────────────────────────────────────────────
+# ── 7. Evaluar ────────────────────────────────────────────
     t0 = time.time()
     print("\n" + "=" * 65)
     print("EVALUACIÓN")
@@ -127,11 +131,3 @@ if __name__ == "__main__":
     evaluar(modelo, X_val, y_val, stats, historial_train, historial_val)
     print(f"Tiempo evaluación: {time.time() - t0:.2f}s")
 
-
-    # ── 7. Guardar modelo ─────────────────────────────────────
-    torch.save({
-        'model_state_dict': modelo.state_dict(),
-        'stats': stats,
-        'capas': ARQUITECTURA
-    }, "modelo_bha.pth")
-    print("\nModelo guardado en: modelo_bha.pth")
