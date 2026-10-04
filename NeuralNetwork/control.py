@@ -29,11 +29,11 @@ from trayectoria import TrayectoriaIdeal, generar_waypoints_random
 # ─────────────────────────────────────────────────────────────
 
 # Ruido del IMU — poner 0 para desactivar
-RUIDO_IMU_I  = 0
-RUIDO_IMU_A  = 0
+RUIDO_IMU_I  = 0.5
+RUIDO_IMU_A  = 2
 
 # Variabilidad del UCS
-RUIDO_UCS_LOCAL = 0
+RUIDO_UCS_LOCAL = 0.5
 N_NODOS_UCS    = 6
 
 # Rango de ε
@@ -406,6 +406,10 @@ if __name__ == "__main__":
 
     np.random.seed(42)
     modelo, stats = cargar_modelo("modelo_bha.pth")
-    simular_perforacion(modelo, stats)
+    seed = 174
+    simular_perforacion(modelo, stats, semilla_trayectoria=seed,
+                                       adaptacion_activa=True,  verbose=False, graficar=True)
+    simular_perforacion(modelo, stats, semilla_trayectoria=seed,
+                                       adaptacion_activa=False, verbose=False, graficar=True)
 
     archivo_log.close()

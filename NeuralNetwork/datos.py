@@ -2,10 +2,10 @@
 datos.py — Generación de datos y normalización
 ================================================
 Contiene:
-  - generar_datos()   : genera dataset sintético (REEMPLAZAR con modelo del paper)
-  - preparar_dataset(): normaliza y divide en train/val
-  - normalizar_X()    : normaliza inputs para inferencia
-  - desnormalizar_y() : convierte outputs normalizados a unidades reales
+  - cargar_datos()     : carga el dataset real desde CSV
+  - preparar_dataset()  : normaliza y divide en train/val (agrupado por trayectoria)
+  - normalizar_X()      : normaliza inputs para inferencia
+  - desnormalizar_y()   : convierte outputs normalizados a unidades reales
 """
 
 import numpy as np
@@ -14,47 +14,53 @@ from config import (DATASET_PATH, FRACCION_VAL)
 
 
 # ─────────────────────────────────────────────────────────────
-# CARGAR DATOS DEL PAPER
+# CARGAR DATOS
 # ─────────────────────────────────────────────────────────────
 
 def cargar_datos(ruta=DATASET_PATH):
     import pandas as pd
-    
+
     df = pd.read_csv(ruta)
-    
-    X = df[['kappa_1_mm', 'epsilon_MPa']].values    # 2 inputs
-    y = df[['F_roca_N']].values                      # 1 output
-    
+
+    X = df[['kappa_1_mm', 'ROP_mm_min', 'RPM', 'epsilon_MPa']].values  # 4 inputs
+    y = df[['F_roca_N']].values                                        # 1 output
+    traj_id = df['trayectoria_id'].values
+
     print(f"Dataset cargado: {ruta}")
     print(f"  Puntos totales: {len(X)}")
+    print(f"  Trayectorias:   {len(np.unique(traj_id))}")
     print(f"  kappa rango:    [{X[:,0].min():.6f}, {X[:,0].max():.6f}] 1/mm")
-    print(f"  F_roca rango:  [{y[:,0].min():.2f}, {y[:,0].max():.2f}] N")
-    
-    return X, y
+    print(f"  ROP rango:      [{X[:,1].min():.2f}, {X[:,1].max():.2f}] mm/min")
+    print(f"  RPM rango:      [{X[:,2].min():.1f}, {X[:,2].max():.1f}]")
+    print(f"  epsilon rango:  [{X[:,3].min():.2f}, {X[:,3].max():.2f}] MPa")
+    print(f"  F_roca rango:   [{y[:,0].min():.2f}, {y[:,0].max():.2f}] N")
+
+    return X, y, traj_id
 
 
 # ─────────────────────────────────────────────────────────────
 # NORMALIZACIÓN Y PREPARACIÓN DEL DATASET
 # ─────────────────────────────────────────────────────────────
 
-def preparar_dataset(X, y, fraccion_val=FRACCION_VAL):
+def preparar_dataset(X, y, traj_id, fraccion_val=FRACCION_VAL):
     """
     Normaliza inputs y outputs a [0,1] y divide en train/validación.
-    El conjunto de validación sirve para detectar overfitting: si la loss
-    de train baja pero la de validación sube, la red está memorizando
-    los datos de entrenamiento en vez de aprender la relación general.
+
+    El split se hace por TRAYECTORIA COMPLETA, no por punto individual:
+    todos los puntos de una misma trayectoria van enteros a train o a
+    validación. Si se mezclaran puntos de la misma trayectoria entre
+    ambos conjuntos, la validación quedaría contaminada (puntos casi
+    idénticos ya vistos en train) y no mediría generalización real.
 
     Args:
-        X : array (N, 5) — inputs sin normalizar
-        y : array (N, 2) — outputs sin normalizar
-        fraccion_val : fracción del dataset para validación
+        X       : array (N, 4) — inputs sin normalizar [kappa, ROP, RPM, epsilon]
+        y       : array (N, 1) — outputs sin normalizar
+        traj_id : array (N,)   — id de trayectoria de cada punto
+        fraccion_val : fracción de TRAYECTORIAS para validación
 
     Returns:
-        X_train, y_train : tensores de entrenamiento normalizados
-        X_val, y_val     : tensores de validación normalizados
-        stats            : diccionario con min/max para desnormalizar
+        X_train, y_train, X_val, y_val, stats
     """
-    # Guardar estadísticas para desnormalizar después
     X_min = X.min(axis=0)
     X_max = X.max(axis=0)
     y_min = y.min(axis=0)
@@ -65,33 +71,33 @@ def preparar_dataset(X, y, fraccion_val=FRACCION_VAL):
         'y_min': y_min, 'y_max': y_max
     }
 
-    # Normalización min-max a [0, 1]
     X_norm = (X - X_min) / (X_max - X_min + 1e-8)
     y_norm = (y - y_min) / (y_max - y_min + 1e-8)
 
-    # División train/validación con mezcla aleatoria
-    N       = len(X_norm)
-    N_val   = int(N * fraccion_val)
-    N_train = N - N_val
+    # Split por trayectoria completa
+    ids_unicos = np.unique(traj_id)
+    n_val_traj = max(1, int(len(ids_unicos) * fraccion_val))
 
-    idx       = np.random.permutation(N)
-    idx_train = idx[:N_train]
-    idx_val   = idx[N_train:]
+    ids_perm = np.random.permutation(ids_unicos)
+    ids_val = set(ids_perm[:n_val_traj].tolist())
 
-    X_train = torch.tensor(X_norm[idx_train], dtype=torch.float32)
-    y_train = torch.tensor(y_norm[idx_train], dtype=torch.float32)
-    X_val   = torch.tensor(X_norm[idx_val],   dtype=torch.float32)
-    y_val   = torch.tensor(y_norm[idx_val],   dtype=torch.float32)
+    mask_val = np.array([tid in ids_val for tid in traj_id])
+    mask_train = ~mask_val
+
+    X_train = torch.tensor(X_norm[mask_train], dtype=torch.float32)
+    y_train = torch.tensor(y_norm[mask_train], dtype=torch.float32)
+    X_val   = torch.tensor(X_norm[mask_val],   dtype=torch.float32)
+    y_val   = torch.tensor(y_norm[mask_val],   dtype=torch.float32)
 
     print(f"\nDataset:")
-    print(f"  Train: {N_train} puntos")
-    print(f"  Val:   {N_val} puntos")
+    print(f"  Train: {mask_train.sum()} puntos ({len(ids_unicos) - n_val_traj} trayectorias)")
+    print(f"  Val:   {mask_val.sum()} puntos ({n_val_traj} trayectorias)")
 
     return X_train, y_train, X_val, y_val, stats
 
 
 def desnormalizar_y(y_norm, stats):
-    """Convierte outputs normalizados [0,1] de vuelta a °/mm."""
+    """Convierte outputs normalizados [0,1] de vuelta a unidades reales."""
     y_min = torch.tensor(stats['y_min'], dtype=torch.float32)
     y_max = torch.tensor(stats['y_max'], dtype=torch.float32)
     return y_norm * (y_max - y_min) + y_min

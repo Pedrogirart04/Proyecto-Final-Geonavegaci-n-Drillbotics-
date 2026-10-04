@@ -48,12 +48,12 @@ SARTA_K = (3 * SARTA_E * SARTA_I) / (SARTA_L**3)  # k = 3EI/L³ [N/mm]
 # ─────────────────────────────────────────────────────────────
 # CAMINO AL ARCHIVO DE DATASET
 # ─────────────────────────────────────────────────────────────
-DATASET_PATH = "dataset_nn.csv"
+DATASET_PATH = "dataset_F_k_ROP_RPM_UCS.csv"
 
 # ─────────────────────────────────────────────────────────────
 # HIPERPARÁMETROS DE LA RED
 # ─────────────────────────────────────────────────────────────
-ARQUITECTURA = [2, 64, 64, 64, 1]   # [n_inputs, oculta1, oculta2, oculta3, n_outputs]
+ARQUITECTURA = [4, 64, 64, 64, 1]   # [n_inputs, oculta1, oculta2, oculta3, n_outputs]
 LR_ADAM      = 1e-3                  # Learning rate para fase Adam
 N_EPOCHS     = 500                  # Epochs de Adam
 BATCH_SIZE   = 256                   # Tamaño de mini-batch

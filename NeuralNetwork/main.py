@@ -41,7 +41,7 @@ if __name__ == "__main__":
     print("=" * 65)
     print("CARGANDO DATOS")
     print("=" * 65)
-    X, y = cargar_datos()
+    X, y, traj_id = cargar_datos()
     
     # ── Validación de distribución del dataset ────────────────
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     
     # ── 2. Preparar dataset ───────────────────────────────────
     t0 = time.time()
-    X_train, y_train, X_val, y_val, stats = preparar_dataset(X, y)
+    X_train, y_train, X_val, y_val, stats = preparar_dataset(X, y, traj_id)
     print(f"Tiempo preparación dataset: {time.time() - t0:.2f}s")
 
     # ── 3. Crear la red ───────────────────────────────────────

@@ -23,9 +23,9 @@ semilla = 42;
 rng(semilla);           % Reproducibilidad (afecta waypoints Y el LHS)
 
 %% 2. RANGOS DE LAS VARIABLES OPERATIVAS (sorteadas via LHS)
-ROP_range = [5, 20];       % [mm/min]  <<<< AJUSTAR SI CAMBIA
+ROP_range = [5, 30];       % [mm/min]  <<<< AJUSTAR SI CAMBIA
 RPM_range = [1000, 2000];  % [rpm]     <<<< AJUSTAR SI CAMBIA (valor provisorio, a confirmar con el equipo)
-UCS_range = [22, 28];      % [MPa]     <<<< AJUSTAR SI CAMBIA
+UCS_range = [20, 30];      % [MPa]     <<<< AJUSTAR SI CAMBIA
 
 %% 3. PARÁMETROS FIJOS DEL SISTEMA (mismos que Main.m / generar_dataset.m)
 
