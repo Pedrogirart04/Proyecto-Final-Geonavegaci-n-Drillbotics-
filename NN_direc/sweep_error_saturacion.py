@@ -14,7 +14,7 @@ mejor = 0.75  # [mm] Ya encontrado en el barrido anterior, sin ruido
 modelo, stats = cargar_modelo("modelo_red_k_F_UCS_ROP_RPM.pth")
 
 print(f"Confirmando con ERROR_SATURACION={mejor} (con ruido de IMU/UCS activado): True vs False")
-N_SEEDS_CONFIRMACION = 60
+N_SEEDS_CONFIRMACION = 200
 err_true  = np.array([simular_perforacion(modelo, stats, semilla_trayectoria=s, adaptacion_activa=True,  error_saturacion=mejor, verbose=False, graficar=False)['error_rms'] for s in range(N_SEEDS_CONFIRMACION)])
 err_false = np.array([simular_perforacion(modelo, stats, semilla_trayectoria=s, adaptacion_activa=False, error_saturacion=mejor, verbose=False, graficar=False)['error_rms'] for s in range(N_SEEDS_CONFIRMACION)])
 print(f"  (n={N_SEEDS_CONFIRMACION} seeds)")
