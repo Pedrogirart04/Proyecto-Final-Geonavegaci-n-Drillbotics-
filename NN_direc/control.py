@@ -169,6 +169,7 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None,
 
     rng_tray = np.random.default_rng(semilla_trayectoria)
     waypoints_curva = generar_waypoints_random(rng=rng_tray)
+    rng_ruido = np.random.default_rng(None if semilla_trayectoria is None else semilla_trayectoria + 1_000_000)
     trayectoria = TrayectoriaIdeal(waypoints_curva=waypoints_curva)
     if verbose:
         print(f"Waypoints: P1=(0,0,{trayectoria.L_bit}) [fijo], "
@@ -287,8 +288,8 @@ def simular_perforacion(modelo, stats, semilla_trayectoria=None,
             I_real += dIds_real * ds_paso
             A_real += dAds_real * ds_paso
 
-            I_medido = I_real + np.random.normal(0, RUIDO_IMU_I) if RUIDO_IMU_I > 0 else I_real
-            A_medido = A_real + np.random.normal(0, RUIDO_IMU_A) if RUIDO_IMU_A > 0 else A_real
+            I_medido = I_real + rng_ruido.normal(0, RUIDO_IMU_I) if RUIDO_IMU_I > 0 else I_real
+            A_medido = A_real + rng_ruido.normal(0, RUIDO_IMU_A) if RUIDO_IMU_A > 0 else A_real
 
             historial_I.append(I_medido)
             historial_A.append(A_medido)
