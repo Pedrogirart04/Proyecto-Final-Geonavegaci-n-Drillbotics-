@@ -5,7 +5,31 @@ vs. la fórmula analítica, en una grilla sistemática.
 Pegar en NN_vert/ y correr: python validar_formula_UCS.py
 """
 import numpy as np
-from probar_red_UCS import cargar_modelo, predecir_UCS, wob_formula
+import torch
+
+from modelo import RedBHA
+from datos import desnormalizar_y, normalizar_X
+from config import A_TREPANO
+
+
+def cargar_modelo(ruta="modelo_vert_WOB_RPM_ROP_UCS.pth"):
+    checkpoint = torch.load(ruta, weights_only=False)
+    modelo = RedBHA(capas=checkpoint['capas'])
+    modelo.load_state_dict(checkpoint['model_state_dict'])
+    modelo.eval()
+    return modelo, checkpoint['stats']
+
+
+def predecir_UCS(modelo, stats, rop, rpm, wob):
+    X = np.array([[rop, rpm, wob]])
+    X_tensor = normalizar_X(X, stats)
+    with torch.no_grad():
+        return desnormalizar_y(modelo(X_tensor), stats).item()
+
+
+def wob_formula(rop, rpm, ucs, a=A_TREPANO):
+    return np.pi * a * ucs * rop / (2 * rpm)
+
 
 ROP_VALORES = [5.0, 10.0, 15.0, 20.0, 25.0, 30.0]
 RPM_VALORES = [1000.0, 1250.0, 1500.0, 1750.0, 2000.0]
