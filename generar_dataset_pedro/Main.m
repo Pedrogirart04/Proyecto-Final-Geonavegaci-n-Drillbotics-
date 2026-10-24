@@ -2,6 +2,7 @@
 % SCRIPT MAIN - TESIS DE GEONAVEGACIÓN
 % =========================================================================
 clear; clc; close all;
+addpath('funciones');
 
 %% 1. Definición de los 3 Waypoints objetivo [X, Y, Z] en mm
 % (Z aumenta hacia abajo)
