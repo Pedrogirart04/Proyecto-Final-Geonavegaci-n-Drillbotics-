@@ -1,3 +1,5 @@
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import numpy as np
 import torch
 import matplotlib.pyplot as plt
@@ -5,7 +7,7 @@ from modelo import RedBHA
 from datos import desnormalizar_y
 
 # Cargar modelo
-checkpoint = torch.load("modelo_bha.pth", weights_only=False)
+checkpoint = torch.load("../modelos/modelo_bha.pth", weights_only=False)
 modelo = RedBHA(capas=checkpoint['capas'])
 modelo.load_state_dict(checkpoint['model_state_dict'])
 modelo.eval()
@@ -34,5 +36,5 @@ ax.set_ylabel('F_roca [N]')
 ax.set_title('Relación κ → F_roca aprendida por la red para distintos UCS')
 ax.legend()
 ax.grid(True)
-plt.savefig('relacion_red_aprendida.png', dpi=150)
+plt.savefig('../figuras/relacion_red_aprendida.png', dpi=150)
 plt.show()

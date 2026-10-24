@@ -16,7 +16,7 @@
 % =========================================================================
 clear; clc; close all;
 tic
-
+addpath(fullfile(fileparts(mfilename('fullpath')), '..', 'funciones'));
 %% 1. PARÁMETROS DE GENERACIÓN
 N_trayectorias = 200;   % <<<< AJUSTAR SI CAMBIA: cantidad final de trayectorias
 semilla = 42;

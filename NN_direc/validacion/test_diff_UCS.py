@@ -1,7 +1,9 @@
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from control import cargar_modelo
 from optimizador import evaluar_red_roca
 
-modelo, stats = cargar_modelo("modelo_bha.pth")
+modelo, stats = cargar_modelo("../modelos/modelo_bha.pth")
 kappa_fijo = 0.000305  # el valor de clamp que vimos en todos los logs
 
 for eps in [22, 24, 25, 26, 28]:

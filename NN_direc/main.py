@@ -60,7 +60,7 @@ if __name__ == "__main__":
     axes[1].grid(True)
 
     plt.tight_layout()
-    plt.savefig("distribucion_dataset.png", dpi=150)
+    plt.savefig("figuras/distribucion_dataset.png", dpi=150)
     plt.show()
     
     print(f"Tiempo generación datos: {time.time() - t0:.2f}s")
@@ -89,8 +89,8 @@ if __name__ == "__main__":
         'model_state_dict': modelo.state_dict(),
         'stats': stats,
         'capas': ARQUITECTURA
-    }, "modelo_red_k_F_UCS_ROP_RPM.pth")
-    print("\nModelo guardado en: modelo_red_k_F_UCS_ROP_RPM.pth")
+        }, "modelos/modelo_red_k_F_UCS_ROP_RPM.pth")
+    print("\nModelo guardado en: modelos/modelo_red_k_F_UCS_ROP_RPM.pth")
     
     # ── 6. Ejemplo Sist control ────────────────────────
     t0 = time.time()

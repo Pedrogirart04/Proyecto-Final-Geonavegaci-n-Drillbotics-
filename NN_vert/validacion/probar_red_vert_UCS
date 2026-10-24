@@ -13,7 +13,8 @@ Requiere: modelo_UCS.pth (generado por main.py) — si lo renombraste al
 guardar (como hiciste con el de Fase B), cambiá el nombre por default
 en cargar_modelo() más abajo.
 """
-
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import torch
 import numpy as np
 from modelo import RedBHA
@@ -21,7 +22,7 @@ from datos import desnormalizar_y, normalizar_X
 from config import A_TREPANO
 
 
-def cargar_modelo(ruta="modelo_vert_WOB_RPM_ROP_UCS.pth"):
+def cargar_modelo(ruta="../modelos/modelo_vert_WOB_RPM_ROP_UCS.pth"):
     checkpoint = torch.load(ruta, weights_only=False)
     modelo = RedBHA(capas=checkpoint['capas'])
     modelo.load_state_dict(checkpoint['model_state_dict'])

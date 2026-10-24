@@ -9,12 +9,14 @@ Compara dos métricas:
     real logrado) — aísla el efecto de conocer UCS del efecto de posibles
     oscilaciones del lazo de control.
 """
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import numpy as np
 from control import cargar_modelo, simular_perforacion
 
 N_SEEDS = 20   # <<<< AJUSTAR SI CAMBIA
 
-modelo, stats = cargar_modelo("modelo_bha.pth")
+modelo, stats = cargar_modelo("../modelos/modelo_bha.pth")
 
 filas = []
 for seed in range(N_SEEDS):

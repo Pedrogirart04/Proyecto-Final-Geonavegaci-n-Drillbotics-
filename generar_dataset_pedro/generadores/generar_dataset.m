@@ -11,6 +11,7 @@
 % =========================================================================
 clear; clc; close all;
 tic
+addpath(fullfile(fileparts(mfilename('fullpath')), '..', 'funciones'));
 %% 1. PARÁMETROS DE GENERACIÓN
 N_trayectorias = 50;  % <-- Subir a 200 para dataset final
 semilla = 42;

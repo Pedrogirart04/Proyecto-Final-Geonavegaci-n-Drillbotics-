@@ -8,7 +8,7 @@ Incluye:
   - Estimación online de ε por bisección
   - Histéresis en descomposición de pads
 """
-
+import os
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -389,7 +389,7 @@ def graficar_simulacion(hist_pos, hist_ideal, hist_error, hist_s, hist_F,
     axes[1,2].axis('off')
 
     plt.tight_layout()
-    plt.savefig("simulacion_perforacion.png", dpi=150)
+    plt.savefig("figuras/simulacion_perforacion.png", dpi=150)
     plt.show()
 
     '''
@@ -402,18 +402,19 @@ def graficar_simulacion(hist_pos, hist_ideal, hist_error, hist_s, hist_F,
     ax.set_xlabel("X [mm]"); ax.set_ylabel("Y [mm]"); ax.set_zlabel("Z [mm]")
     ax.set_title("Trayectoria 3D: Ideal vs Real"); ax.invert_zaxis()
     ax.legend()
-    plt.savefig("simulacion_3d.png", dpi=150)
+    plt.savefig("figuras/simulacion_3d.png", dpi=150)
     plt.show()
     '''
 
 
 if __name__ == "__main__":
-    nombre_log = f"salida_kmax{KAPPA_MAX_CONTROL_DEG}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+    os.makedirs("logs", exist_ok=True)
+    nombre_log = f"logs/salida_kmax{KAPPA_MAX_CONTROL_DEG}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     archivo_log = open(nombre_log, "w", encoding="utf-8", buffering=1)
     sys.stdout = Tee(sys.__stdout__, archivo_log)
 
     np.random.seed(42)
-    modelo, stats = cargar_modelo("modelo_red_k_F_UCS_ROP_RPM.pth")
+    modelo, stats = cargar_modelo("modelos/modelo_red_k_F_UCS_ROP_RPM.pth")
     seed = 174
     simular_perforacion(modelo, stats, semilla_trayectoria=seed,
                                        adaptacion_activa=True,  verbose=False, graficar=True)

@@ -14,7 +14,7 @@ A_TREPANO = 1.5 * 25.4 / 2   # Radio del trépano [mm] (igual que Fase B)
 # ─────────────────────────────────────────────────────────────
 # CAMINO AL ARCHIVO DE DATASET
 # ─────────────────────────────────────────────────────────────
-DATASET_PATH = "dataset_UCS_sintetico.csv"   # <<<< cambiar a CSV real cuando esté
+DATASET_PATH = "datos/dataset_UCS_sintetico.csv"
 
 # ─────────────────────────────────────────────────────────────
 # HIPERPARÁMETROS DE LA RED

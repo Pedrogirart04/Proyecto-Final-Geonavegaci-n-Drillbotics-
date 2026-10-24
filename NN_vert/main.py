@@ -63,8 +63,8 @@ if __name__ == "__main__":
         'model_state_dict': modelo.state_dict(),
         'stats': stats,
         'capas': ARQUITECTURA
-    }, "modelo_vert_WOB_RPM_ROP_UCS.pth")
-    print("\nModelo guardado en: modelo_vert_WOB_RPM_ROP_UCS.pth")
+       }, "modelos/modelo_vert_WOB_RPM_ROP_UCS.pth")
+    print("\nModelo guardado en: modelos/modelo_vert_WOB_RPM_ROP_UCS.pth")
 
     # ── 6. Evaluar ────────────────────────────────────────────
     t0 = time.time()

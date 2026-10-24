@@ -6,12 +6,14 @@ la adaptación de UCS (ADAPTACION_ACTIVA) sigue ayudando cuando hay ruido de
 IMU y de UCS local realista (seteado en control.py: RUIDO_IMU_I, RUIDO_IMU_A,
 RUIDO_UCS_LOCAL), que es la pregunta que estaba abierta.
 """
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import numpy as np
 from control import cargar_modelo, simular_perforacion
 
 mejor = 0.75  # [mm] Ya encontrado en el barrido anterior, sin ruido
 
-modelo, stats = cargar_modelo("modelo_red_k_F_UCS_ROP_RPM.pth")
+modelo, stats = cargar_modelo("../modelos/modelo_red_k_F_UCS_ROP_RPM.pth")
 
 print(f"Confirmando con ERROR_SATURACION={mejor} (con ruido de IMU/UCS activado): True vs False")
 N_SEEDS_CONFIRMACION = 200

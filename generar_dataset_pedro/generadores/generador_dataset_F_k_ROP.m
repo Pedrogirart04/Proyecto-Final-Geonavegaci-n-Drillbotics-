@@ -8,7 +8,7 @@
 %   F_roca_N | kappa_1_mm | ROP_mm_min | R_mm | Z_mm
 % =========================================================================
 clear; clc; close all;
-
+addpath(fullfile(fileparts(mfilename('fullpath')), '..', 'funciones'));
 %% 1. PARÁMETROS DE GENERACIÓN
 N_trayectorias = 50;  % <-- Subir para dataset final
 semilla = 42;

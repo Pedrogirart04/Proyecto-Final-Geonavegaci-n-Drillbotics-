@@ -14,7 +14,8 @@ Mecanica de cada paso (igual a la que usa simular_perforacion):
 Para correr: python probar_red.py
 Requiere: modelo_red_k_F_UCS_ROP_RPM.pth (generado por main.py)
 """
-
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import numpy as np
 
 from control import cargar_modelo, calcular_kappa_real, ROP_SIM, RPM_SIM
@@ -68,7 +69,7 @@ def estimar_epsilon_rango_completo(modelo, stats, kappa_real, rop, rpm, F_roca_a
 
 if __name__ == "__main__":
 
-    modelo, stats = cargar_modelo("modelo_red_k_F_UCS_ROP_RPM.pth")
+    modelo, stats = cargar_modelo("../modelos/modelo_red_k_F_UCS_ROP_RPM.pth")
     eps_min_red = float(stats['X_min'][3])
     eps_max_red = float(stats['X_max'][3])
 

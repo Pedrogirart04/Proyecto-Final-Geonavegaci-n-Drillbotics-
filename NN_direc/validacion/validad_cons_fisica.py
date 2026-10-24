@@ -13,7 +13,8 @@ imprime/grafica para mirarlo a ojo.
 Para correr: python validar_consistencia_fisica.py
 Requiere: modelo_red_k_F_UCS_ROP_RPM.pth
 """
-
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -50,7 +51,7 @@ def es_monotona_creciente(F_vals, tolerancia=1e-6):
 
 if __name__ == "__main__":
 
-    modelo, stats = cargar_modelo("modelo_red_k_F_UCS_ROP_RPM.pth")
+    modelo, stats = cargar_modelo("../modelos/modelo_red_k_F_UCS_ROP_RPM.pth")
 
     fig, axes = plt.subplots(1, 4, figsize=(20, 4))
     fig.suptitle("Validación 1 — Consistencia física por input", fontsize=14)
@@ -80,5 +81,5 @@ if __name__ == "__main__":
             axes[idx].set_title("(sin dirección esperada a priori, mirar a ojo)")
 
     plt.tight_layout()
-    plt.savefig("validacion_consistencia_fisica.png", dpi=150)
+    plt.savefig("../figuras/validacion_consistencia_fisica.png", dpi=150)
     plt.show()

@@ -48,7 +48,7 @@ SARTA_K = (3 * SARTA_E * SARTA_I) / (SARTA_L**3)  # k = 3EI/L³ [N/mm]
 # ─────────────────────────────────────────────────────────────
 # CAMINO AL ARCHIVO DE DATASET
 # ─────────────────────────────────────────────────────────────
-DATASET_PATH = "dataset_F_k_ROP_RPM_UCS.csv"
+DATASET_PATH = "datos/dataset_F_k_ROP_RPM_UCS.csv"
 
 # ─────────────────────────────────────────────────────────────
 # HIPERPARÁMETROS DE LA RED

@@ -215,5 +215,5 @@ def evaluar(modelo, X_val, y_val, stats, historial_train, historial_val):
     axes[2].grid(True)
 
     plt.tight_layout()
-    plt.savefig("resultado_nn_bha.png", dpi=150)
+    plt.savefig("figuras/resultado_nn_bha.png", dpi=150)
     plt.show()
