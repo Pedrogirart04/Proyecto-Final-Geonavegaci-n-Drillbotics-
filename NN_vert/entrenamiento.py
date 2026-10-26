@@ -166,31 +166,31 @@ def evaluar(modelo, X_val, y_val, stats, historial_train, historial_val):
     print(f"\n{'─'*65}")
     print(f"EVALUACIÓN EN VALIDACIÓN")
     print(f"{'─'*65}")
-    print(f"F_roca — Error medio: {error.mean():.4f} Mpa | "
-          f"Error max: {error.max():.4f} Mpa")
+    print(f"UCS — Error medio: {error.mean():.4f} MPa | ")
 
     # Error relativo respecto al rango
     rango = np.abs(y_real[:, 0]).max() + 1e-10
     err_rel = error / rango * 100
-    print(f"F_roca — Error relativo máximo: {err_rel.max():.2f}%")
+    print(f"UCS — Error relativo máximo: {err_rel.max():.2f}%")
+    
 
     # ── Gráficos ──────────────────────────────────────────────
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
-    fig.suptitle("Evaluación Red Neuronal BHA", fontsize=14)
+    fig.suptitle("Evaluación Red Neuronal UCS", fontsize=14)
 
     # — F_roca: predicho vs real —
     axes[0].scatter(y_real[:,0], y_pred_real[:,0], alpha=0.3, s=5)
     lim = max(np.abs(y_real[:,0]).max(), np.abs(y_pred_real[:,0]).max())
     axes[0].plot([0, lim], [0, lim], 'r--', lw=1.5, label="ideal")
-    axes[0].set_xlabel("F_roca real [N]")
-    axes[0].set_ylabel("F_roca predicho [N]")
+    axes[0].set_xlabel("UCS real [MPa]")
+    axes[0].set_ylabel("UCS predicho [MPa]")
     axes[0].set_title("Predicho vs Real")
     axes[0].legend()
     axes[0].grid(True)
 
     # — Histograma error —
     axes[1].hist(error, bins=50, color='steelblue', edgecolor='white')
-    axes[1].set_xlabel("Error absoluto [N]")
+    axes[1].set_xlabel("Error absoluto [MPa]")
     axes[1].set_ylabel("Cantidad de puntos")
     axes[1].set_title("Distribución del error")
     axes[1].grid(True)
@@ -215,5 +215,5 @@ def evaluar(modelo, X_val, y_val, stats, historial_train, historial_val):
     axes[2].grid(True)
 
     plt.tight_layout()
-    plt.savefig("figuras/resultado_nn_bha.png", dpi=150)
+    plt.savefig("figuras/resultado_nn_vert.png", dpi=150)
     plt.show()
