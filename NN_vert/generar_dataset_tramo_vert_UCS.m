@@ -32,12 +32,12 @@
 clear; clc; close all;
 
 %% 1. PARÁMETROS DE GENERACIÓN
-N_muestras = 1000;      % <<<< AJUSTAR SI CAMBIA: cantidad de puntos sintéticos
+N_muestras = 2000;      % <<<< AJUSTAR SI CAMBIA: cantidad de puntos sintéticos
 semilla = 42;
 rng(semilla);           % Reproducibilidad
 
 %% 2. RANGOS DE LAS VARIABLES (sorteadas vía LHS)
-ROP_range = [5, 30];       % [mm/min]  
+ROP_range = [1, 60];       % [mm/min]
 RPM_range = [1000, 2000];  % [rpm]     
 UCS_range = [20, 30];      % [MPa]    
 

@@ -18,14 +18,14 @@ clear; clc; close all;
 tic
 addpath(fullfile(fileparts(mfilename('fullpath')), '..', 'funciones'));
 %% 1. PARÁMETROS DE GENERACIÓN
-N_trayectorias = 200;   % <<<< AJUSTAR SI CAMBIA: cantidad final de trayectorias
+N_trayectorias = 400;   % <<<< AJUSTAR SI CAMBIA: cantidad final de trayectorias
 semilla = 42;
 rng(semilla);           % Reproducibilidad (afecta waypoints Y el LHS)
 
 %% 2. RANGOS DE LAS VARIABLES OPERATIVAS (sorteadas via LHS)
-ROP_range = [5, 30];       % [mm/min]  <<<< AJUSTAR SI CAMBIA
-RPM_range = [1000, 2000];  % [rpm]     <<<< AJUSTAR SI CAMBIA (valor provisorio, a confirmar con el equipo)
-UCS_range = [20, 30];      % [MPa]     <<<< AJUSTAR SI CAMBIA
+ROP_range = [1, 60];       % [mm/min]  
+RPM_range = [1000, 2000];  % [rpm]     
+UCS_range = [20, 30];      % [MPa]     
 
 %% 3. PARÁMETROS FIJOS DEL SISTEMA (mismos que Main.m / generar_dataset.m)
 

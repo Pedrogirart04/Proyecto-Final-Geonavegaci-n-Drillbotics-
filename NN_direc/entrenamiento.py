@@ -90,7 +90,7 @@ def entrenar(modelo, X_train, y_train, X_val, y_val,
             mejor_val_loss = loss_val
             mejor_estado   = {k: v.clone() for k, v in modelo.state_dict().items()}
 
-        if epoch % 100 == 0 or epoch == N_epochs - 1:
+        if epoch % 25 == 0 or epoch == N_epochs - 1:
             print(f"Epoch {epoch:5d} | Loss train: {loss_train_epoch:.4e} "
                   f"| Loss val: {loss_val:.4e}")
 
