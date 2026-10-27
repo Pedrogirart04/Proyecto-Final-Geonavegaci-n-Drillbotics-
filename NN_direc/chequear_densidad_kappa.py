@@ -7,7 +7,7 @@ Pegar en NN_direc/, al lado de dataset_F_k_ROP_RPM_UCS.csv, y correr.
 """
 import pandas as pd
 
-df = pd.read_csv("dataset_F_k_ROP_RPM_UCS.csv")
+df = pd.read_csv("datos/dataset_F_k_ROP_RPM_UCS.csv")
 kappa = df["kappa_1_mm"]
 
 print(f"Total de puntos en el dataset: {len(kappa)}")

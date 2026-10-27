@@ -35,7 +35,7 @@ X_val_norm = torch.tensor(X_norm[mask_val], dtype=torch.float32)
 X_val_real = X[mask_val]
 y_real = y[mask_val, 0]
 
-modelo, stats_modelo = cargar_modelo("modelo_red_k_F_UCS_ROP_RPM.pth")
+modelo, stats_modelo = cargar_modelo("modelos/modelo_red_k_F_UCS_ROP_RPM.pth")
 modelo.eval()
 with torch.no_grad():
     y_pred_norm = modelo(X_val_norm).numpy()[:, 0]

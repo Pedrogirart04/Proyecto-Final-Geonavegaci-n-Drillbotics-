@@ -17,7 +17,7 @@ from optimizador import evaluar_red_roca
 
 if __name__ == "__main__":
 
-    modelo, stats = cargar_modelo("modelo_red_k_F_UCS_ROP_RPM.pth")
+    modelo, stats = cargar_modelo("modelos/modelo_red_k_F_UCS_ROP_RPM.pth")
     df = pd.read_csv("validacion_perneder_puntos.csv")
 
     print("=" * 90)

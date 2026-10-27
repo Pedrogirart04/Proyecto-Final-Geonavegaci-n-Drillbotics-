@@ -20,7 +20,7 @@ np.random.seed(42)
 X, y, traj_id = cargar_datos()
 X_train, y_train, X_val, y_val, stats = preparar_dataset(X, y, traj_id)
 
-modelo, stats_modelo = cargar_modelo("modelo_red_k_F_UCS_ROP_RPM.pth")
+modelo, stats_modelo = cargar_modelo("modelos/modelo_red_k_F_UCS_ROP_RPM.pth")
 
 if not (np.allclose(stats['X_min'], stats_modelo['X_min']) and
         np.allclose(stats['X_max'], stats_modelo['X_max'])):

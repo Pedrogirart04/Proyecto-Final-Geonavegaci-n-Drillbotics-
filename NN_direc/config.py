@@ -55,7 +55,7 @@ DATASET_PATH = "datos/dataset_F_k_ROP_RPM_UCS.csv"
 # ─────────────────────────────────────────────────────────────
 ARQUITECTURA = [4, 64, 64, 64, 1]   # [n_inputs, oculta1, oculta2, oculta3, n_outputs]
 LR_ADAM      = 1e-3                  # Learning rate para fase Adam
-N_EPOCHS     = 500                  # Epochs de Adam
+N_EPOCHS     = 150                 # Epochs de Adam
 BATCH_SIZE   = 256                   # Tamaño de mini-batch
 N_LBFGS      = 100                   # Iteraciones de L-BFGS
 FRACCION_VAL = 0.2                   # Fracción del dataset para validación
